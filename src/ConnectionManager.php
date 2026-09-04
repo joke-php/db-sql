@@ -71,13 +71,11 @@ class ConnectionManager
 
             return $this->instances[$name];
         }
-        if (is_callable($factory) || is_string($factory)) {
-            $connection = $this->container->make($factory);
-            if ($connection instanceof ConnectionInterface) {
-                $this->instances[$name] = $connection;
+        $connection = $this->container->make($factory);
+        if ($connection instanceof ConnectionInterface) {
+            $this->instances[$name] = $connection;
 
-                return $this->instances[$name];
-            }
+            return $this->instances[$name];
         }
 
         throw new ConnectionException(

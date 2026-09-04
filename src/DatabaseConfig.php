@@ -90,8 +90,6 @@ class DatabaseConfig extends AbstractConfig
      *
      * Если подключение по умолчанию не было задано явно, подключением по умолчанию становится первое зарегистрированное подключение.
      *
-     * @return $this
-     *
      * @throws ConfigException Если не зарегистрировано ни одно подключение
      */
     public function freeze(): static

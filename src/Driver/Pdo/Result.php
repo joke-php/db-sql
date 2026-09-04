@@ -80,7 +80,7 @@ class Result implements ResultInterface
     public function all(): array
     {
         try {
-            return $this->statement->fetchAll(\PDO::FETCH_ASSOC);
+            return array_values($this->statement->fetchAll(\PDO::FETCH_ASSOC));
         } catch (\PDOException $e) {
             throw new QueryException($e->getMessage(), $e->getCode(), $e);
         }

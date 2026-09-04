@@ -77,6 +77,11 @@ enum Driver: string
         };
     }
 
+    /**
+     * @return non-empty-string
+     *
+     * @throws ConfigException При ошибке конфигурации
+     */
     private function odbc(SqlConnectionConfig $config): string
     {
         if ($dsnName = $config->getSpecificOption('DSN')) {
@@ -94,6 +99,11 @@ enum Driver: string
         throw new ConfigException("DSN for 'odbc' requires at least one of: database, DSN.");
     }
 
+    /**
+     * @return non-empty-string
+     *
+     * @throws ConfigException При ошибке конфигурации
+     */
     private function oci(SqlConnectionConfig $config): string
     {
         self::ensureRequiredAlternative(
@@ -110,6 +120,11 @@ enum Driver: string
         return 'oci:' . self::formatOptions($parts);
     }
 
+    /**
+     * @return non-empty-string
+     *
+     * @throws ConfigException При ошибке конфигурации
+     */
     private function sqlsrv(SqlConnectionConfig $config): string
     {
         self::ensureRequired($config, 'database');
@@ -132,6 +147,11 @@ enum Driver: string
         return 'sqlsrv:' . self::formatOptions($parts);
     }
 
+    /**
+     * @return non-empty-string
+     *
+     * @throws ConfigException При ошибке конфигурации
+     */
     private function informix(SqlConnectionConfig $config): string
     {
         $parts = [
@@ -147,6 +167,11 @@ enum Driver: string
         return 'informix:' . self::formatOptions($parts);
     }
 
+    /**
+     * @return non-empty-string
+     *
+     * @throws ConfigException При ошибке конфигурации
+     */
     private function ibm(SqlConnectionConfig $config): string
     {
         self::ensureRequired($config, 'host');
@@ -161,6 +186,11 @@ enum Driver: string
         return 'ibm:' . self::formatOptions($parts);
     }
 
+    /**
+     * @return non-empty-string
+     *
+     * @throws ConfigException При ошибке конфигурации
+     */
     private function firebird(SqlConnectionConfig $config): string
     {
         self::ensureRequired($config, 'database');
@@ -184,6 +214,11 @@ enum Driver: string
         return 'firebird:' . self::formatOptions($parts);
     }
 
+    /**
+     * @return non-empty-string
+     *
+     * @throws ConfigException При ошибке конфигурации
+     */
     private function dblibFamily(SqlConnectionConfig $config): string
     {
         self::ensureRequired($config, 'host');
@@ -199,6 +234,11 @@ enum Driver: string
         return $config->driver . ':' . self::formatOptions($parts);
     }
 
+    /**
+     * @return non-empty-string
+     *
+     * @throws ConfigException При ошибке конфигурации
+     */
     private function cubrid(SqlConnectionConfig $config): string
     {
         self::ensureRequired($config, 'host');
@@ -212,6 +252,11 @@ enum Driver: string
         return 'cubrid:' . self::formatOptions($parts);
     }
 
+    /**
+     * @return non-empty-string
+     *
+     * @throws ConfigException При ошибке конфигурации
+     */
     private function mysql(SqlConnectionConfig $config): string
     {
         self::ensureRequiredAlternative(
@@ -230,6 +275,11 @@ enum Driver: string
         return 'mysql:' . self::formatOptions($parts);
     }
 
+    /**
+     * @return non-empty-string
+     *
+     * @throws ConfigException При ошибке конфигурации
+     */
     private function pgsql(SqlConnectionConfig $config): string
     {
         self::ensureRequired($config, 'host');
@@ -244,6 +294,11 @@ enum Driver: string
         return 'pgsql:' . self::formatOptions($parts);
     }
 
+    /**
+     * @return non-empty-string
+     *
+     * @throws ConfigException При ошибке конфигурации
+     */
     private function sqlite(SqlConnectionConfig $config): string
     {
         self::ensureRequired($config, 'database');
@@ -251,6 +306,9 @@ enum Driver: string
         return "sqlite:{$config->database}";
     }
 
+    /**
+     * @param array<string,null|bool|float|int|string> $options
+     */
     private function formatOptions(array $options): string
     {
         $result = [];
