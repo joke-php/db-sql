@@ -12,6 +12,16 @@ use Vasoft\Joke\Db\Sql\Exceptions\QueryException;
 interface ConnectionInterface
 {
     /**
+     * Текущий уровень вложенности транзакций.
+     * 0 — нет активной транзакции, 1 — реальная транзакция, >1 — savepoints.
+     *
+     * @readonly
+     */
+    public int $transactionLevel {
+        get;
+    }
+
+    /**
      * Выполняет SELECT-запрос и возвращает результат.
      *
      * @param string                   $sql    SQL-запрос с плейсхолдерами

@@ -19,6 +19,11 @@ use Vasoft\Joke\Db\Sql\Exceptions\TransactionException;
  */
 abstract class BaseConnection implements ConnectionInterface
 {
+    public int $transactionLevel = 0 {
+        get {
+            return $this->transactionLevel;
+        }
+    }
     /**
      * @var array<string, list<array<string, mixed>>> хранилище данных по коллекциям
      */

@@ -30,7 +30,9 @@ class Connection implements ConnectionInterface
      * Текущий уровень вложенности транзакций.
      * 0 — нет активной транзакции, 1 — реальная транзакция, >1 — savepoints.
      */
-    private int $transactionLevel = 0;
+    public protected(set) int $transactionLevel = 0 {
+        get => $this->transactionLevel;
+    }
 
     /**
      * Кэш DSN-строки. Формируется один раз при первом обращении.
