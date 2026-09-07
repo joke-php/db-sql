@@ -98,6 +98,19 @@ final class ConnectionManagerTest extends TestCase
 
         self::assertSame($entity1, $entity2);
     }
+    #[TestDox('Сброс закешированных подключений')]
+    public function testReset(): void
+    {
+        $config = new DatabaseConfig()
+            ->addConnection('example1', MemoryConnection::class);
+
+        $manager = new ConnectionManager($config, new ServiceContainer());
+        $entity1 = $manager->connection('example1');
+        $manager->reset();
+        $entity2 = $manager->connection('example1');
+
+        self::assertNotSame($entity1, $entity2);
+    }
 
     #[TestDox('Возвращает подключение по умолчанию при пустом имени')]
     public function testDefaultConnection(): void

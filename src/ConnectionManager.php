@@ -108,4 +108,25 @@ class ConnectionManager
     ): ConnectionInterface {
         return new LoggableConnection($this->connection($connectionName), $logger, $logMode);
     }
+
+    /**
+     * Закрывает все закэшированные подключения и очищает кэш.
+     *
+     * Полезно для:
+     * - Изоляции тестов (вызывать в tearDown())
+     * - Long-running процессов (после обработки запроса)
+     * - Graceful shutdown
+     */
+    public function reset(): void
+    {
+        foreach ($this->instances as $connection) {
+            try {
+                $connection->disconnect();
+            } catch (\Throwable) {
+                // Игнорируем ошибки при закрытии, чтобы не прерывать цикл
+            }
+        }
+
+        $this->instances = [];
+    }
 }
