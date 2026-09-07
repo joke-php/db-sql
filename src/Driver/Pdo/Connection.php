@@ -208,7 +208,7 @@ class Connection implements ConnectionInterface
      *
      * @template T
      *
-     * @param callable(self): T $callback функция, выполняемая внутри транзакции
+     * @param callable(ConnectionInterface): T $callback функция, выполняемая внутри транзакции
      *
      * @return T возвращаемое значение callback
      *

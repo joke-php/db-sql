@@ -8,7 +8,10 @@ use Vasoft\Joke\Config\Exceptions\ConfigException;
 use Vasoft\Joke\Container\Exceptions\ParameterResolveException;
 use Vasoft\Joke\Container\ServiceContainer;
 use Vasoft\Joke\Db\Sql\Contract\ConnectionInterface;
+use Vasoft\Joke\Db\Sql\Contract\SqlLoggerInterface;
 use Vasoft\Joke\Db\Sql\Exceptions\ConnectionException;
+use Vasoft\Joke\Db\Sql\Logger\LoggableConnection;
+use Vasoft\Joke\Db\Sql\Logger\LogMode;
 
 /**
  * Менеджер подключений к базе данных.
@@ -81,5 +84,28 @@ class ConnectionManager
         throw new ConnectionException(
             "Connection '{$name}' does not implement '" . ConnectionInterface::class . "'.",
         );
+    }
+
+    /**
+     * Возвращает экземпляр подключения по имени, обёрнутый в декоратор логирования.
+     *
+     * ВАЖНО: возвращается та же самая реальная сессия, что и из connection(), —
+     * обёртка лишь добавляет логирование. Транзакции и состояние разделяются между
+     * обычным и «логируемым» доступом к одному имени.
+     *
+     * @param SqlLoggerInterface $logger         Логер
+     * @param string             $connectionName Имя подключения (пустое = по умолчанию)
+     * @param LogMode            $logMode        Режим логирования
+     *
+     * @throws ConnectionException       Если полученный объект не реализует {@see ConnectionInterface}
+     * @throws ConfigException           Если подключение с указанным именем не зарегистрировано в конфигурации
+     * @throws ParameterResolveException При ошибках разрешения зависимостей через DI-контейнер
+     */
+    public function loggable(
+        SqlLoggerInterface $logger,
+        string $connectionName = '',
+        LogMode $logMode = LogMode::All,
+    ): ConnectionInterface {
+        return new LoggableConnection($this->connection($connectionName), $logger, $logMode);
     }
 }

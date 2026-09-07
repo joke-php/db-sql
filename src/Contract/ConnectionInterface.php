@@ -75,8 +75,8 @@ interface ConnectionInterface
      *
      * @template T
      *
-     * @param callable(self): T $callback Функция, выполняемая внутри транзакции.
-     *                                    Получает текущее подключение в качестве аргумента.
+     * @param callable(ConnectionInterface): T $callback Функция, выполняемая внутри транзакции.
+     *                                                   Получает текущее подключение в качестве аргумента.
      *
      * @return T возвращаемое значение callback
      *
