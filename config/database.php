@@ -8,9 +8,15 @@ use Vasoft\Joke\Config\Environment;
 use Vasoft\Joke\Db\Sql\SqlConnectionConfig;
 use Vasoft\Joke\Db\Sql\DatabaseConfig;
 use Vasoft\Joke\Db\Sql\Driver\Pdo\Connection;
-
-$databasePath = dirname(__DIR__) . '/' . $env->get('SQLITEDATABASE');
-$connectionConfig = new SqlConnectionConfig('sqlite', $databasePath);
+use Vasoft\Joke\Support\FileSystem;
 
 return new DatabaseConfig()
-    ->addConnection('default', static fn() => new Connection($connectionConfig));
+    ->addConnection(
+        'default',
+        static function (Environment $env, FileSystem $fs) {
+            $databasePath = $fs->atBase($env->get('SQLITEDATABASE'));
+            $connectionConfig = new SqlConnectionConfig('sqlite', $databasePath);
+
+            return new Connection($connectionConfig);
+        },
+    );

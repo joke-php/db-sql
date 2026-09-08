@@ -30,7 +30,7 @@ return new KernelConfig()
 
 ## Базовая конфигурация
 
-В конфигурации модуля регистрируйте необходимые подключения 
+В конфигурации модуля регистрируйте необходимые подключения
 
 ```php
 // config/database.php
@@ -59,6 +59,7 @@ return new DatabaseConfig()
 ## Как использовать
 
 В приложении к подключению можно обращаться при помощи менеджера соединений
+
 ```php
 /**
  * @var \Vasoft\Joke\Container\ServiceContainer $container
@@ -73,4 +74,4 @@ $connection = $manager->getConnection('default');
 ```
 
 ---
-Далее [Быстрый старт](quick-start.md).
+Далее [Настройки подключения и модуля](configure.md).
