@@ -98,11 +98,11 @@ class Connection implements ConnectionInterface
     }
 
     /**
-     * @return false|int количество затронутых строк или false при ошибке (для exec без параметров)
+     * @return int количество затронутых строк или false при ошибке (для exec без параметров)
      *
      * @throws QueryException при ошибке выполнения запроса
      */
-    public function execute(string $sql, array $params = []): int|false
+    public function execute(string $sql, array $params = []): int
     {
         try {
             $pdo = $this->ensureConnection();

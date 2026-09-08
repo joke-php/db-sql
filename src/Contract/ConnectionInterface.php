@@ -39,11 +39,11 @@ interface ConnectionInterface
      * @param string                   $sql    SQL-запрос с плейсхолдерами
      * @param array<int|string, mixed> $params параметры для подстановки в запрос
      *
-     * @return false|int количество затронутых строк
+     * @return int количество затронутых строк
      *
      * @throws QueryException при ошибке выполнения запроса
      */
-    public function execute(string $sql, array $params = []): int|false;
+    public function execute(string $sql, array $params = []): int;
 
     /**
      * Начинает транзакцию.
