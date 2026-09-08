@@ -84,7 +84,7 @@ final class LoggableConnection implements ConnectionInterface
      *
      * @throws QueryException
      */
-    public function execute(string $sql, array $params = []): int|false
+    public function execute(string $sql, array $params = []): int
     {
         $start = hrtime(true);
 

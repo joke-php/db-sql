@@ -98,6 +98,7 @@ final class ConnectionManagerTest extends TestCase
 
         self::assertSame($entity1, $entity2);
     }
+
     #[TestDox('Сброс закешированных подключений')]
     public function testReset(): void
     {

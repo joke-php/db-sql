@@ -68,7 +68,7 @@ final class LoggableConnectionTest extends TestCase
                 throw new \LogicException('not used in test');
             }
 
-            public function execute(string $sql, array $params = []): int|false
+            public function execute(string $sql, array $params = []): int
             {
                 throw new \LogicException('not used in test');
             }
@@ -183,21 +183,6 @@ final class LoggableConnectionTest extends TestCase
         self::assertSame(5, $result);
     }
 
-    #[TestDox('execute() логирует ноль строк при false')]
-    public function testExecuteLogsZeroWhenFalse(): void
-    {
-        $this->inner->method('execute')->willReturn(false);
-        $logger = self::createMock(SqlLoggerInterface::class);
-
-        $logger->expects(self::once())
-            ->method('query')
-            ->with(self::SQL, self::PARAMS, self::isFloat(), 0, null);
-
-        $result = $this->makeConnection(logger: $logger)->execute(self::SQL, self::PARAMS);
-
-        self::assertFalse($result);
-    }
-
     #[TestDox('execute() логирует ошибку и пробрасывает DatabaseException')]
     public function testExecuteLogsDatabaseExceptionAndRethrows(): void
     {
@@ -292,7 +277,7 @@ final class LoggableConnectionTest extends TestCase
                 throw new \LogicException('not used');
             }
 
-            public function execute(string $sql, array $params = []): int|false
+            public function execute(string $sql, array $params = []): int
             {
                 throw new \LogicException('not used');
             }
@@ -339,7 +324,7 @@ final class LoggableConnectionTest extends TestCase
                 throw new \LogicException('not used');
             }
 
-            public function execute(string $sql, array $params = []): int|false
+            public function execute(string $sql, array $params = []): int
             {
                 throw new \LogicException('not used');
             }

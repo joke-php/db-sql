@@ -107,7 +107,12 @@ class Connection implements ConnectionInterface
         try {
             $pdo = $this->ensureConnection();
             if (empty($params)) {
-                return $pdo->exec($sql);
+                $result = $pdo->exec($sql);
+                if (false === $result) {
+                    throw new QueryException("Failed to execute SQL query: '{$sql}'.");
+                }
+
+                return $result;
             }
             $statement = $pdo->prepare($sql);
             $statement->execute($params);
