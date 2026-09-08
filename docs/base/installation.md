@@ -67,9 +67,9 @@ return new DatabaseConfig()
  */
 $manager = $container->get(ConnectionManager::class);
 // запрос соединения по умолчанию
-$connection = $manager->getConnection();
+$connection = $manager->connection();
 // запрос соединения по имени
-$connection = $manager->getConnection('default');
+$connection = $manager->connection('default');
 
 ```
 
