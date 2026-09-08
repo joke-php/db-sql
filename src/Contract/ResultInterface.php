@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Vasoft\Joke\Db\Sql\Contract;
 
+use Vasoft\Joke\Db\Sql\Exceptions\QueryException;
+
 /**
  * Представляет результат выполнения запроса к базе данных.
  *
@@ -23,12 +25,14 @@ interface ResultInterface extends \IteratorAggregate, \Countable
     public function all(): array;
 
     /**
-     * Возвращает первую строку результата в виде ассоциативного массива,
-     * или null, если результат пуст.
+     * Возвращает следующую строку результата в виде ассоциативного массива
+     * или false, если строк больше нет.
      *
      * @return array<string, mixed>|false
+     *
+     * @throws QueryException При ошибке чтения из PDOStatement
      */
-    public function one(): false|array;
+    public function fetch(): false|array;
 
     /**
      * Возвращает количество строк в результате.

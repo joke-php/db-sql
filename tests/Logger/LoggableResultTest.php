@@ -57,27 +57,27 @@ final class LoggableResultTest extends TestCase
     #[TestDox('one() логирует одну найденную строку')]
     public function testOneLogsSingleRow(): void
     {
-        $this->inner->method('one')->willReturn(['id' => 1]);
+        $this->inner->method('fetch')->willReturn(['id' => 1]);
 
         $this->logger->expects(self::once())
             ->method('query')
             ->with(self::SQL, self::PARAMS, self::isFloat(), 1, null);
 
         $result = $this->makeResult();
-        self::assertSame(['id' => 1], $result->one());
+        self::assertSame(['id' => 1], $result->fetch());
     }
 
     #[TestDox('one() логирует ноль строк, если строка не найдена')]
     public function testOneReturnsFalseLogsZero(): void
     {
-        $this->inner->method('one')->willReturn(false);
+        $this->inner->method('fetch')->willReturn(false);
 
         $this->logger->expects(self::once())
             ->method('query')
             ->with(self::SQL, self::PARAMS, self::isFloat(), 0, null);
 
         $result = $this->makeResult();
-        self::assertFalse($result->one());
+        self::assertFalse($result->fetch());
     }
 
     #[TestDox('count() логирует количество строк')]
@@ -168,7 +168,7 @@ final class LoggableResultTest extends TestCase
     public function testLoggingHappensOnlyOnce(): void
     {
         $this->inner->method('all')->willReturn([['id' => 1], ['id' => 2]]);
-        $this->inner->method('one')->willReturn(['id' => 1]);
+        $this->inner->method('fetch')->willReturn(['id' => 1]);
         $this->inner->method('count')->willReturn(5);
 
         // несколько чтений -> логер вызывается только один раз
@@ -178,7 +178,7 @@ final class LoggableResultTest extends TestCase
 
         $result = $this->makeResult();
         $result->all();
-        $result->one();
+        $result->fetch();
         $result->count();
     }
 

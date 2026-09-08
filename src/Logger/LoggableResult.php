@@ -6,6 +6,7 @@ namespace Vasoft\Joke\Db\Sql\Logger;
 
 use Vasoft\Joke\Db\Sql\Contract\SqlLoggerInterface;
 use Vasoft\Joke\Db\Sql\Contract\ResultInterface;
+use Vasoft\Joke\Db\Sql\Exceptions\QueryException;
 
 /**
  * Декоратор Result, логирующий фактическую выборку строк.
@@ -56,17 +57,20 @@ final class LoggableResult implements ResultInterface
     }
 
     /**
-     * Возвращает первую строку результата или false, если строк нет.
+     * Возвращает следующую строку результата в виде ассоциативного массива
+     * или false, если строк больше нет.
      *
      * Логирует время выборки одной строки.
      *
      * @return array<string,mixed>|false
+     *
+     * @throws QueryException
      */
-    public function one(): false|array
+    public function fetch(): false|array
     {
         $this->touched = true;
         $start = hrtime(true);
-        $row = $this->inner->one();
+        $row = $this->inner->fetch();
         $this->log(false === $row ? 0 : 1, $this->elapsedMs($start));
 
         return $row;

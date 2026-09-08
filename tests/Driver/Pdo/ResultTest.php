@@ -49,7 +49,7 @@ final class ResultTest extends TestCase
             ->willReturn($row);
 
         $result = new Result($statement);
-        self::assertSame($row, $result->one());
+        self::assertSame($row, $result->fetch());
     }
 
     #[TestDox('Метод one возвращает null если строк нет')]
@@ -62,7 +62,7 @@ final class ResultTest extends TestCase
             ->willReturn(false);
 
         $result = new Result($statement);
-        self::assertFalse($result->one());
+        self::assertFalse($result->fetch());
     }
 
     #[TestDox('Метод count возвращает количество затронутых строк')]
@@ -135,7 +135,7 @@ final class ResultTest extends TestCase
         self::expectException(QueryException::class);
         self::expectExceptionMessageIs('Fetch failed');
 
-        $result->one();
+        $result->fetch();
     }
 
     #[TestDox('Выбрасывает QueryException при ошибке PDO в getIterator')]

@@ -40,7 +40,7 @@ class Result implements ResultInterface
     /**
      * @return null|array<string, mixed>
      */
-    public function one(): ?array
+    public function fetch(): ?array
     {
         return $this->data[0] ?? null;
     }

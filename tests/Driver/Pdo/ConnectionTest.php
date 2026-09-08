@@ -99,7 +99,7 @@ final class ConnectionTest extends TestCase
         );
 
         self::assertSame(1, $affected);
-        self::assertSame(1, $this->connection->query('SELECT COUNT(*) AS cnt FROM users')->one()['cnt']);
+        self::assertSame(1, $this->connection->query('SELECT COUNT(*) AS cnt FROM users')->fetch()['cnt']);
     }
 
     #[TestDox('commit() фиксирует изменения')]
@@ -109,7 +109,7 @@ final class ConnectionTest extends TestCase
         $this->connection->execute("INSERT INTO users (name) VALUES ('Olga')");
         $this->connection->commit();
 
-        self::assertSame(1, $this->connection->query('SELECT COUNT(*) AS cnt FROM users')->one()['cnt']);
+        self::assertSame(1, $this->connection->query('SELECT COUNT(*) AS cnt FROM users')->fetch()['cnt']);
     }
 
     #[TestDox('rollBack() откатывает изменения')]
@@ -119,7 +119,7 @@ final class ConnectionTest extends TestCase
         $this->connection->execute("INSERT INTO users (name) VALUES ('Olga')");
         $this->connection->rollBack();
 
-        self::assertSame(0, $this->connection->query('SELECT COUNT(*) AS cnt FROM users')->one()['cnt']);
+        self::assertSame(0, $this->connection->query('SELECT COUNT(*) AS cnt FROM users')->fetch()['cnt']);
     }
 
     #[TestDox('Вложенные транзакции коммитятся на обоих уровнях')]
@@ -134,7 +134,7 @@ final class ConnectionTest extends TestCase
 
         $this->connection->commit(); // final commit
 
-        self::assertSame(2, $this->connection->query('SELECT COUNT(*) AS cnt FROM users')->one()['cnt']);
+        self::assertSame(2, $this->connection->query('SELECT COUNT(*) AS cnt FROM users')->fetch()['cnt']);
     }
 
     #[TestDox('Внутренний rollBack сохраняет изменения внешней транзакции')]
@@ -163,7 +163,7 @@ final class ConnectionTest extends TestCase
         });
 
         self::assertSame(42, $result);
-        self::assertSame(1, $this->connection->query('SELECT COUNT(*) AS cnt FROM users')->one()['cnt']);
+        self::assertSame(1, $this->connection->query('SELECT COUNT(*) AS cnt FROM users')->fetch()['cnt']);
     }
 
     #[TestDox('transaction() откатывает изменения при исключении в колбэке')]
@@ -179,7 +179,7 @@ final class ConnectionTest extends TestCase
             });
         } finally {
             // Вставка должна быть откачена
-            self::assertSame(0, $this->connection->query('SELECT COUNT(*) AS cnt FROM users')->one()['cnt']);
+            self::assertSame(0, $this->connection->query('SELECT COUNT(*) AS cnt FROM users')->fetch()['cnt']);
         }
     }
 
@@ -336,7 +336,7 @@ final class ConnectionTest extends TestCase
             self::assertFalse($connection->isConnected());
 
             // Повторный запрос должен пересоздать подключение
-            self::assertSame(1, $connection->query('SELECT COUNT(*) AS cnt FROM users')->one()['cnt']);
+            self::assertSame(1, $connection->query('SELECT COUNT(*) AS cnt FROM users')->fetch()['cnt']);
             self::assertTrue($connection->isConnected());
         } finally {
             unlink($tempFile);

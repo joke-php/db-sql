@@ -87,7 +87,8 @@ class Result implements ResultInterface
     }
 
     /**
-     * Возвращает первую строку результата или false, если результат пуст.
+     * Возвращает следующую строку результата в виде ассоциативного массива
+     * или false, если строк больше нет.
      *
      * Сдвигает внутренний курсор PDOStatement. Последующие вызовы
      * вернут следующие строки, а не ту же самую.
@@ -96,7 +97,7 @@ class Result implements ResultInterface
      *
      * @throws QueryException При ошибке чтения из PDOStatement
      */
-    public function one(): false|array
+    public function fetch(): false|array
     {
         try {
             return $this->statement->fetch(\PDO::FETCH_ASSOC);
