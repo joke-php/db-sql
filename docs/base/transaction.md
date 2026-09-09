@@ -72,4 +72,4 @@ $result2 = $connection->transaction(static fn(): int => $connection->execute(
 разделе [Конфигурирование подключений](configure.md).
 
 ---
-Далее: [Логирование запросов](../dev/logging.md) 
+Далее: [Логирование запросов](logging.md) 
