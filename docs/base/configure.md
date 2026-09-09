@@ -1,19 +1,23 @@
-# Настройка
+# Конфигурирование подключений и модуля
 
 После [установки и первичной настройки](installation.md) модуля можно сразу переходить к настройке подключений.
 
 ## Конфигурация подключения
 
-Для конфигурации подключений необходимо использовать класс `Vasoft\Joke\Db\Sql\SqlConnectionConfig`.
+Конфигурирование подключения определяется конкретной реализацией контракта
+`Vasoft\Joke\Db\Sql\Contract\ConnectionInterface`.
+
+В модуль входит реализация для драйверов PDO `Vasoft\Joke\Db\Sql\Driver\Pdo\Connection`. В этом модуле основные
+параметры передаются через конструктор
 
 ### Параметры конструктора
 
 Данный класс в конструктор получает следующие параметры:
 
 - `driver` (обязательный) - строка, наименование драйвера подключения. При использовании реализованного в модуле
-  драйвере PDO `Vasoft\Joke\Db\Sql\Driver\Pdo\Connection` варианты следующие: `sybase`, `mssql`, `dblib`, `cubrid`,
-  `odbc`, `mysql`, `pgsql`, `sqlite`, `firebird`, `ibm`, `informix`, `oci`, `sqlsrv`. Для того чтобы не допустить
-  опечаток можно использовать enum `Vasoft\Joke\Db\Sql\Driver\Pdo\Driver`
+  драйвере PDO `Vasoft\Joke\Db\Sql\Driver\Pdo\Connection` варианты следующие: `dblib`, `cubrid`, `odbc`, `mysql`,
+  `pgsql`, `sqlite`, `firebird`, `ibm`, `informix`, `oci`, `sqlsrv`. Для того чтобы не допустить опечаток можно
+  использовать enum `Vasoft\Joke\Db\Sql\Driver\Pdo\Driver`
 - `database` (обязательный) - имя базы данных
 - `host` (не обязательный) - имя или адрес сервера
 - `port` (не обязательный) - порт сервера
@@ -23,42 +27,47 @@
 
 ### Дополнительные параметры
 
-Кроме того есть возможность настроить политику поддержки транзакций. Выполнять это необходимо до
-заморозки (конфигурация становится неизменяемой после первого обращения к менеджеру соединений) конфигурации системой.
-Это выполняется при первом подключении (подключение, в свою очередь, выполняется при
-первом запросе).
-
-#### Политика поддержки транзакций
-
-Не все СУБД одинаково поддерживают транзакции по этому можно управлять политикой поведения транзакций соединения.
+Кроме того есть возможность настроить политику действий для подключений не поддерживающих транзакции.
 Выполняется это следующим образом:
 
 ```php
+// config/database.php
+<?php
+
+/** @var Environment $env */
+
+declare(strict_types=1);
+
+use Vasoft\Joke\Config\Environment;
+use Vasoft\Joke\Db\Sql\DatabaseConfig;
+use Vasoft\Joke\Db\Sql\Driver\Pdo\Connection;
 use Vasoft\Joke\Db\Sql\TransactionSupportPolicy;
-use Vasoft\Joke\Db\Sql\SqlConnectionConfig;
-/** @var SqlConnectionConfig $config */
-$config->setTransactionSupportPolicy(TransactionSupportPolicy::SILENCE);
-// обращение к значению
-if ($config->transactionSupportPolicy === TransactionSupportPolicy::THROW) {
-    // ...
-}
+
+$databasePath = dirname(__DIR__) . '/' . $env->get('SQLITEDATABASE');
+
+// Пример: подключение к legacy MySQL базе на движке MyISAM,
+// который не поддерживает транзакции. Политика OPTIONAL позволяет
+// использовать единый код с транзакциями без ошибок.
+return new DatabaseConfig()
+    ->addConnection('legacy', static fn() => new Connection(
+        driver: 'mysql',
+        database: 'legacy_db',
+        host: 'localhost',
+        username: 'root',
+        password: '',
+    )->setTransactionSupportPolicy(TransactionSupportPolicy::OPTIONAL))
+    ->setDefaultConnectionName('legacy');
+
 ```
+
+Для подключений поддерживающих транзакции (это определяется автоматически), настройка не имеет значения. Она играет роль
+только для подключений, не поддерживающих транзакции.
 
 Существует два типа поведения
 
-- `TransactionSupportPolicy::THROW` - поведение по умолчанию, выбрасывать исключение при попытке запустить, откатить или
-  зафиксировать
-  транзакцию
-- `TransactionSupportPolicy::SILENCE` - игнорировать вызовы методов работы с транзакциями
-
-### Пример конфигурации подключения
-
-```php
-use Vasoft\Joke\Db\Sql;
-
-$config = new Sql\SqlConnectionConfig('mysql','example','user','pass')
-    ->setTransactionSupportPolicy(Sql\TransactionSupportPolicy::SILENCE);
-```
+- `TransactionSupportPolicy::REQUIRED` - поведение по умолчанию, выбрасывать исключение при попытке запустить, откатить
+  или зафиксировать транзакцию
+- `TransactionSupportPolicy::OPTIONAL` - запросы будут выполняться не вызывая исключений. Эту политику необходимо применять осторожно и обоснованно, т.к. в случае ошибок откатов транзакций фактически не будет и есть возможность получить неконсистентное состояние базы данных. 
 
 ## Конфигурация модуля
 
@@ -71,7 +80,6 @@ $config = new Sql\SqlConnectionConfig('mysql','example','user','pass')
 declare(strict_types=1);
 
 use Vasoft\Joke\Config\Environment;
-use Vasoft\Joke\Db\Sql\SqlConnectionConfig;
 use Vasoft\Joke\Db\Sql\DatabaseConfig;
 use Vasoft\Joke\Db\Sql\Driver\Pdo\Connection;
 use Vasoft\Joke\Support\FileSystem;
@@ -81,9 +89,8 @@ return new DatabaseConfig()
         'default',
         static function (Environment $env, FileSystem $fs) {
             $databasePath = $fs->atBase($env->get('SQLITEDATABASE'));
-            $connectionConfig = new SqlConnectionConfig('sqlite', $databasePath);
 
-            return new Connection($connectionConfig);
+            return new Connection('sqlite', $databasePath);
         },
     );
 ```
@@ -112,7 +119,8 @@ use Vasoft\Joke\Support\FileSystem;
 $connection = new Connection('sqlite', ':memory:');
 
 return new DatabaseConfig()
-    ->addConnection('memory', $connection);
+    ->addConnection('memory', $connection)
+    ->setDefaultConnectionName('memory');
 ```
 
 Если этот метод не был вызван, то при заморозке конфигурации модуля системой основным соединением будет назначено первое
