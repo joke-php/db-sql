@@ -7,7 +7,6 @@ namespace Vasoft\Joke\Db\Sql\Driver\Pdo;
 use Vasoft\Joke\Db\Sql\Contract\ConnectionInterface;
 use Vasoft\Joke\Db\Sql\Contract\ResultInterface;
 use Vasoft\Joke\Db\Sql\Exceptions\QueryException;
-use Vasoft\Joke\Db\Sql\SqlConnectionConfig;
 
 /**
  * PDO-реализация подключения к базе данных.
@@ -38,6 +37,44 @@ class Connection implements ConnectionInterface
      * Кэш DSN-строки. Формируется один раз при первом обращении.
      */
     protected string $dsn = '';
+    /**
+     * Поддержка транзакций текущим соединением.
+     */
+    protected ?bool $supportsTransactions = null {
+        get {
+            if (null === $this->supportsTransactions) {
+                try {
+                    $pdo = $this->ensureConnection();
+                    $pdo->beginTransaction();
+                    $pdo->rollBack();
+                    $this->supportsTransactions = true;
+                } catch (\PDOException) {
+                    $this->supportsTransactions = false;
+                }
+            }
+
+            return $this->supportsTransactions;
+        }
+    }
+
+    /**
+     * @param non-empty-string                         $driver          Название драйвера БД (mysql, pgsql, sqlite и т.д.)
+     * @param non-empty-string                         $database        Имя базы данных или путь к файлу (для SQLite)
+     * @param string                                   $host            Хост сервера БД (пустая строка для локальных/Unix-сокетов)
+     * @param null|int                                 $port            Порт сервера БД (null для порта по умолчанию)
+     * @param null|string                              $username        Имя пользователя для аутентификации
+     * @param null|string                              $password        Пароль для аутентификации
+     * @param array<string,null|bool|float|int|string> $specificOptions Специфичные опции драйвера (например, параметры для DSN-строки)
+     */
+    public function __construct(
+        public readonly string $driver,
+        public readonly string $database,
+        public readonly string $host = '',
+        public readonly ?int $port = null,
+        public readonly ?string $username = null,
+        public readonly ?string $password = null,
+        public readonly array $specificOptions = [],
+    ) {}
 
     /**
      * Возвращает DSN-строку для PDO.
@@ -47,16 +84,17 @@ class Connection implements ConnectionInterface
     public function dsn(): string
     {
         if ('' === $this->dsn) {
-            $this->dsn = Driver::buildDsn($this->config);
+            $this->dsn = Driver::buildDsn(
+                $this->driver,
+                $this->database,
+                $this->host,
+                $this->port,
+                $this->specificOptions,
+            );
         }
 
         return $this->dsn;
     }
-
-    /**
-     * @param SqlConnectionConfig $config конфигурация подключения
-     */
-    public function __construct(protected readonly SqlConnectionConfig $config) {}
 
     /**
      * Обеспечивает наличие активного PDO-соединения.
@@ -69,8 +107,7 @@ class Connection implements ConnectionInterface
     private function ensureConnection(): \PDO
     {
         if (null === $this->pdo) {
-            $this->config->freeze();
-            $this->pdo = new \PDO($this->dsn(), $this->config->username, $this->config->password, []);
+            $this->pdo = new \PDO($this->dsn(), $this->username, $this->password, []);
             $this->pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
         }
 

@@ -11,7 +11,6 @@ use PHPUnit\Framework\Attributes\TestDox;
 use PHPUnit\Framework\TestCase;
 use Vasoft\Joke\Db\Sql\Driver\Pdo\Connection;
 use Vasoft\Joke\Db\Sql\Exceptions\QueryException;
-use Vasoft\Joke\Db\Sql\SqlConnectionConfig;
 
 /**
  * @internal
@@ -31,7 +30,7 @@ final class ConnectionTest extends TestCase
 
     private function makeConnection(string $database): Connection
     {
-        $connection = new Connection($this->createConfig($database));
+        $connection = new Connection('sqlite', $database);
         $connection->execute(
             'CREATE TABLE IF NOT EXISTS users (
                 id   INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -40,11 +39,6 @@ final class ConnectionTest extends TestCase
         );
 
         return $connection;
-    }
-
-    private function createConfig(string $database): SqlConnectionConfig
-    {
-        return new SqlConnectionConfig('sqlite', $database);
     }
 
     #[TestDox('DSN корректно собирается для SQLite-подключения')]

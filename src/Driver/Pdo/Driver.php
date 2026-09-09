@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Vasoft\Joke\Db\Sql\Driver\Pdo;
 
 use Vasoft\Joke\Config\Exceptions\ConfigException;
-use Vasoft\Joke\Db\Sql\SqlConnectionConfig;
 
 /**
  * Перечисление поддерживаемых PDO-драйверов и генератор DSN-строк.
@@ -16,8 +15,6 @@ use Vasoft\Joke\Db\Sql\SqlConnectionConfig;
  */
 enum Driver: string
 {
-    case SYBASE = 'sybase';
-    case MSSQL = 'mssql';
     case DBLIB = 'dblib';
     case CUBRID = 'cubrid';
     case ODBC = 'odbc';
@@ -41,10 +38,20 @@ enum Driver: string
      *
      * @throws ConfigException Если драйвер не распознан или отсутствуют обязательные параметры
      */
-    public static function buildDsn(SqlConnectionConfig $config): string
-    {
-        return self::tryFrom($config->driver)?->dsn($config)
-            ?? throw new ConfigException("Unknown database driver: '{$config->driver}'.");
+    public static function buildDsn(
+        string $driver,
+        string $database,
+        string $host = '',
+        ?int $port = null,
+        array $specificOptions = [],
+    ): string {
+        return self::tryFrom($driver)?->dsn(
+            $database,
+            $host,
+            $port,
+            $specificOptions,
+        )
+            ?? throw new ConfigException("Unknown database driver: '{$driver}'.");
     }
 
     /**
@@ -54,256 +61,312 @@ enum Driver: string
      * Если драйвер не поддерживается или отсутствуют критические параметры,
      * выбрасывается {@see ConfigException}.
      *
-     * @param SqlConnectionConfig $config Конфигурация SQL-подключения
-     *
      * @return non-empty-string Сформированная DSN-строка для PDO
      *
      * @throws ConfigException В случае отсутствия обязательных параметров
      */
-    public function dsn(SqlConnectionConfig $config): string
-    {
+    public function dsn(
+        string $database,
+        string $host = '',
+        ?int $port = null,
+        array $specificOptions = [],
+    ): string {
+        $dto = $specificOptions;
+        $dto['database'] = $database;
+        $dto['host'] = $host;
+        $dto['port'] = $port;
+
         return match ($this) {
-            self::SYBASE, self::MSSQL, self::DBLIB => $this->dblibFamily($config),
-            self::CUBRID => $this->cubrid($config),
-            self::MYSQL => $this->mysql($config),
-            self::PGSQL => $this->pgsql($config),
-            self::SQLITE => $this->sqlite($config),
-            self::FIREBIRD => $this->firebird($config),
-            self::IBM => $this->ibm($config),
-            self::INFORMIX => $this->informix($config),
-            self::OCI => $this->oci($config),
-            self::SQLSRV => $this->sqlsrv($config),
-            self::ODBC => $this->odbc($config),
+            self::DBLIB => $this->dblib($dto),
+            self::CUBRID => $this->cubrid($dto),
+            self::MYSQL => $this->mysql($dto),
+            self::PGSQL => $this->pgsql($dto),
+            self::SQLITE => $this->sqlite($dto),
+            self::FIREBIRD => $this->firebird($dto),
+            self::IBM => $this->ibm($dto),
+            self::INFORMIX => $this->informix($dto),
+            self::OCI => $this->oci($dto),
+            self::SQLSRV => $this->sqlsrv($dto),
+            self::ODBC => $this->odbc($dto),
         };
     }
 
     /**
+     * @param array<string,null|bool|float|int|string> $dto
+     *
      * @return non-empty-string
      *
      * @throws ConfigException При ошибке конфигурации
      */
-    private function odbc(SqlConnectionConfig $config): string
+    private function odbc(array $dto): string
     {
-        if ($dsnName = $config->getSpecificOption('DSN')) {
-            return "odbc:{$dsnName}";
+        if (!empty($dto['DSN'])) {
+            return "odbc:{$dto['DSN']}";
         }
 
-        if (!empty($config->specificOptions)) {
-            return 'odbc:' . self::formatOptions($config->specificOptions);
+        self::ensureRequiredAlternative($dto, ['database', 'host']);
+
+        $parts = [];
+
+        if (!empty($dto['driver'])) {
+            $parts[] = 'Driver={' . $dto['driver'] . '}';
+        }
+        if (!empty($dto['host'])) {
+            $server = $dto['host'];
+            if (!empty($dto['port'])) {
+                $server .= ',' . $dto['port'];
+            }
+            $parts[] = "Server={$server}";
+        }
+        if (!empty($dto['database'])) {
+            $parts[] = "Database={$dto['database']}";
         }
 
-        if (!empty($config->database)) {
-            return "odbc:{$config->database}";
+        foreach ($dto as $key => $value) {
+            if (!in_array($key, ['driver', 'host', 'port', 'database'], true)
+                && null !== $value && '' !== $value
+            ) {
+                $parts[] = "{$key}={$value}";
+            }
         }
 
-        throw new ConfigException("DSN for 'odbc' requires at least one of: database, DSN.");
+        return 'odbc:' . implode(';', $parts);
     }
 
     /**
+     * @param array<string,null|bool|float|int|string> $dto
+     *
      * @return non-empty-string
      *
      * @throws ConfigException При ошибке конфигурации
      */
-    private function oci(SqlConnectionConfig $config): string
+    private function oci(array $dto): string
     {
-        self::ensureRequiredAlternative(
-            $config,
-            ['dbname' => $config->database, 'tns' => $config->getSpecificOption('tns')],
-        );
+        self::ensureRequiredAlternative($dto, ['database', 'tns']);
 
         $parts = [
-            'dbname' => $config->database,
-            'charset' => $config->charset,
-            'tns' => $config->getSpecificOption('tns'),
+            'dbname' => $dto['database'] ?? null,
+            'charset' => $dto['charset'] ?? null,
+            'tns' => $dto['tns'] ?? null,
         ];
 
         return 'oci:' . self::formatOptions($parts);
     }
 
     /**
+     * @param array<string,null|bool|float|int|string> $dto
+     *
      * @return non-empty-string
      *
      * @throws ConfigException При ошибке конфигурации
      */
-    private function sqlsrv(SqlConnectionConfig $config): string
+    private function sqlsrv(array $dto): string
     {
-        self::ensureRequired($config, 'database');
+        self::ensureRequired($dto, 'database');
 
-        $server = $config->host;
-        if ($config->port) {
-            $server .= ",{$config->port}";
+        $server = $dto['host'] ?? null;
+        if (null !== $server && !empty($dto['port'])) {
+            $server .= ",{$dto['port']}";
         }
 
         $parts = [
             'Server' => $server,
-            'Database' => $config->database,
-            'UID' => $config->username,
-            'PWD' => $config->password,
-            'CharacterSet' => $config->charset,
-            'Encrypt' => $config->getSpecificOption('Encrypt'),
-            'TrustServerCertificate' => $config->getSpecificOption('TrustServerCertificate'),
+            'Database' => $dto['database'],
+            'UID' => $dto['username'] ?? null,
+            'PWD' => $dto['password'] ?? null,
+            'CharacterSet' => $dto['charset'] ?? null,
+            'Encrypt' => $dto['Encrypt'] ?? null,
+            'TrustServerCertificate' => $dto['TrustServerCertificate'] ?? null,
         ];
 
         return 'sqlsrv:' . self::formatOptions($parts);
     }
 
     /**
+     * @param array<string,null|bool|float|int|string> $dto
+     *
      * @return non-empty-string
      *
      * @throws ConfigException При ошибке конфигурации
      */
-    private function informix(SqlConnectionConfig $config): string
+    private function informix(array $dto): string
     {
+        if (empty($dto['DSN'])) {
+            self::ensureRequired($dto, 'host');
+            self::ensureRequired($dto, 'database');
+            self::ensureRequired($dto, 'server');
+        }
+
         $parts = [
-            'DSN' => $config->getSpecificOption('DSN'),
-            'host' => $config->host,
-            'service' => $config->port,
-            'database' => $config->database,
-            'server' => $config->getSpecificOption('server'),
-            'protocol' => $config->getSpecificOption('protocol'),
-            'EnableScrollableCursors' => $config->getSpecificOption('EnableScrollableCursors'),
+            'DSN' => $dto['DSN'] ?? null,
+            'host' => $dto['host'] ?? null,
+            'service' => $dto['port'] ?? null,
+            'database' => $dto['database'] ?? null,
+            'server' => $dto['server'] ?? null,
+            'protocol' => $dto['protocol'] ?? null,
+            'EnableScrollableCursors' => $dto['EnableScrollableCursors'] ?? null,
         ];
 
         return 'informix:' . self::formatOptions($parts);
     }
 
     /**
+     * @param array<string,null|bool|float|int|string> $dto
+     *
      * @return non-empty-string
      *
      * @throws ConfigException При ошибке конфигурации
      */
-    private function ibm(SqlConnectionConfig $config): string
+    private function ibm(array $dto): string
     {
-        self::ensureRequired($config, 'host');
-        self::ensureRequired($config, 'database');
+        self::ensureRequired($dto, 'host');
+        self::ensureRequired($dto, 'database');
         $parts = [
-            'DSN' => $config->getSpecificOption('DSN'),
-            'hostname' => $config->host,
-            'port' => $config->port,
-            'database' => $config->database,
+            'DSN' => $dto['DSN'],
+            'hostname' => $dto['host'],
+            'port' => $dto['port'] ?? null,
+            'database' => $dto['database'],
         ];
 
         return 'ibm:' . self::formatOptions($parts);
     }
 
     /**
+     * @param array<string,null|bool|float|int|string> $dto
+     *
      * @return non-empty-string
      *
      * @throws ConfigException При ошибке конфигурации
      */
-    private function firebird(SqlConnectionConfig $config): string
+    private function firebird(array $dto): string
     {
-        self::ensureRequired($config, 'database');
-        $host = $config->host;
+        self::ensureRequired($dto, 'database');
+        $host = $dto['host'];
         if ('' !== $host) {
-            if (null !== $config->port) {
-                $host .= '/' . $config->port;
+            if (null !== $dto['port']) {
+                $host .= '/' . $dto['port'];
             }
-            $database = $host . ':' . $config->database;
+            $database = $host . ':' . $dto['database'];
         } else {
-            $database = $config->database;
+            $database = $dto['database'];
         }
 
         $parts = [
             'dbname' => $database,
-            'charset' => $config->charset,
-            'role' => $config->getSpecificOption('role'),
-            'dialect' => $config->getSpecificOption('dialect'),
+            'charset' => $dto['charset'] ?? null,
+            'role' => $dto['role'] ?? null,
+            'dialect' => $dto['dialect'] ?? null,
         ];
 
         return 'firebird:' . self::formatOptions($parts);
     }
 
     /**
+     * @param array<string,null|bool|float|int|string> $dto
+     *
      * @return non-empty-string
      *
      * @throws ConfigException При ошибке конфигурации
      */
-    private function dblibFamily(SqlConnectionConfig $config): string
+    private function dblib(array $dto): string
     {
-        self::ensureRequired($config, 'host');
-        self::ensureRequired($config, 'database');
+        self::ensureRequired($dto, 'host');
+        self::ensureRequired($dto, 'database');
+        $host = $dto['host'];
+        if (!empty($dto['port'])) {
+            $host .= ':' . $dto['port'];
+        }
+
         $parts = [
-            'host' => $config->host,
-            'dbname' => $config->database,
-            'charset' => $config->charset,
-            'appname' => $config->getSpecificOption('appname'),
-            'secure' => $config->getSpecificOption('secure'),
+            'host' => $host,
+            'dbname' => $dto['database'],
+            'charset' => $dto['charset'] ?? null,
+            'appname' => $dto['appname'] ?? null,
+            'secure' => $dto['secure'] ?? null,
         ];
 
-        return $config->driver . ':' . self::formatOptions($parts);
+        return $this->value . ':' . self::formatOptions($parts);
     }
 
     /**
+     * @param array<string,null|bool|float|int|string> $dto
+     *
      * @return non-empty-string
      *
      * @throws ConfigException При ошибке конфигурации
      */
-    private function cubrid(SqlConnectionConfig $config): string
+    private function cubrid(array $dto): string
     {
-        self::ensureRequired($config, 'host');
-        self::ensureRequired($config, 'database');
+        self::ensureRequired($dto, 'host');
+        self::ensureRequired($dto, 'database');
         $parts = [
-            'host' => $config->host,
-            'port' => $config->port,
-            'dbname' => $config->database,
+            'host' => $dto['host'],
+            'port' => $dto['port'],
+            'dbname' => $dto['database'],
+            'charset' => $dto['charset'] ?? null,
+            'autocommit' => $dto['autocommit'] ?? null,
+            'loginslowtime' => $dto['loginslowtime'] ?? null,
         ];
 
         return 'cubrid:' . self::formatOptions($parts);
     }
 
     /**
+     * @param array<string,null|bool|float|int|string> $dto
+     *
      * @return non-empty-string
      *
      * @throws ConfigException При ошибке конфигурации
      */
-    private function mysql(SqlConnectionConfig $config): string
+    private function mysql(array $dto): string
     {
-        self::ensureRequiredAlternative(
-            $config,
-            ['host' => $config->host, 'unix_socket' => $config->getSpecificOption('unix_socket')],
-        );
-        self::ensureRequired($config, 'database');
+        self::ensureRequiredAlternative($dto, ['host', 'unix_socket']);
+        self::ensureRequired($dto, 'database');
         $parts = [
-            'host' => $config->host,
-            'unix_socket' => $config->getSpecificOption('unix_socket'),
-            'port' => $config->port,
-            'dbname' => $config->database,
-            'charset' => $config->getSpecificOption('charset'),
+            'host' => $dto['host'],
+            'unix_socket' => $dto['unix_socket'] ?? null,
+            'port' => $dto['port'],
+            'dbname' => $dto['database'],
+            'charset' => $dto['charset'] ?? null,
         ];
 
         return 'mysql:' . self::formatOptions($parts);
     }
 
     /**
+     * @param array<string,null|bool|float|int|string> $dto
+     * @param array<string,null|bool|float|int|string> $dto
+     *
      * @return non-empty-string
      *
      * @throws ConfigException При ошибке конфигурации
      */
-    private function pgsql(SqlConnectionConfig $config): string
+    private function pgsql(array $dto): string
     {
-        self::ensureRequired($config, 'host');
-        self::ensureRequired($config, 'database');
+        self::ensureRequiredAlternative($dto, ['host', 'unix_socket']);
+        self::ensureRequired($dto, 'database');
         $parts = [
-            'host' => $config->host,
-            'port' => $config->port,
-            'dbname' => $config->database,
-            'sslmode' => $config->getSpecificOption('sslmode'),
+            'host' => $dto['host'] ?? $dto['unix_socket'],
+            'port' => $dto['port'] ?? null,
+            'dbname' => $dto['database'],
+            'sslmode' => $dto['sslmode'] ?? null,
         ];
 
         return 'pgsql:' . self::formatOptions($parts);
     }
 
     /**
+     * @param array<string,null|bool|float|int|string> $dto
+     *
      * @return non-empty-string
      *
      * @throws ConfigException При ошибке конфигурации
      */
-    private function sqlite(SqlConnectionConfig $config): string
+    private function sqlite(array $dto): string
     {
-        self::ensureRequired($config, 'database');
+        self::ensureRequired($dto, 'database');
 
-        return "sqlite:{$config->database}";
+        return "sqlite:{$dto['database']}";
     }
 
     /**
@@ -339,28 +402,27 @@ enum Driver: string
      *
      * @throws ConfigException Если свойство отсутствует или пусто
      */
-    private function ensureRequired(SqlConnectionConfig $config, string $propertyName): void
+    private function ensureRequired(array $dto, string $propertyName): void
     {
-        $value = $config->{$propertyName};
-        if (null === $value || '' === $value) {
-            throw new ConfigException("Property '{$propertyName}' cannot be empty for '{$config->driver}'.");
+        if (empty($dto[$propertyName])) {
+            throw new ConfigException("Property '{$propertyName}' cannot be empty for '{$this->value}'.");
         }
     }
 
     /**
      * Проверяет наличие хотя бы одного из альтернативных параметров.
      *
-     * @param array<string, mixed> $options Ассоциативный массив [имя_параметра => значение]
+     * @param list<string> $options Ассоциативный массив [имя_параметра => значение]
      *
      * @throws ConfigException Если все переданные параметры пусты
      */
-    private function ensureRequiredAlternative(SqlConnectionConfig $config, array $options): void
+    private function ensureRequiredAlternative(array $dto, array $options): void
     {
-        if (array_any($options, static fn($option) => null !== $option && '' !== $option)) {
+        if (array_any($options, static fn($option) => !empty($dto[$option]))) {
             return;
         }
-        $keys = implode(',', array_keys($options));
+        $keys = implode(', ', $options);
 
-        throw new ConfigException("DSN for '{$config->driver}' requires at least one of: {$keys}.");
+        throw new ConfigException("DSN for '{$this->value}' requires at least one of: {$keys}.");
     }
 }

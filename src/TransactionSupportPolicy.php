@@ -4,10 +4,8 @@ declare(strict_types=1);
 
 namespace Vasoft\Joke\Db\Sql;
 
-use Vasoft\Joke\Db\Exceptions\TransactionException;
-
 /**
- * Режим эмуляции транзакций для драйверов без нативной поддержки.
+ * Правила реакции на отсутствие поддержки транзакций.
  *
  * Определяет поведение методов {@see ConnectionInterface::beginTransaction()},
  * {@see ConnectionInterface::commit()} и {@see ConnectionInterface::rollBack()}
@@ -16,7 +14,7 @@ use Vasoft\Joke\Db\Exceptions\TransactionException;
 enum TransactionSupportPolicy: string
 {
     /**
-     * Выбрасывать исключение при попытке использования транзакций.
+     * Выбрасывать исключение при попытке использования транзакций в соединениях без поддержки.
      *
      * Если драйвер не поддерживает транзакции, вызов beginTransaction()/commit()/rollBack()
      * приведёт к выбросу {@see TransactionException}.
@@ -24,9 +22,9 @@ enum TransactionSupportPolicy: string
      * Подходит для СУБД с полной поддержкой транзакций, где важно явно контролировать
      * корректность их использования.
      */
-    case THROW = 'throw';
+    case REQUIRED = 'required';
     /**
-     * Игнорировать вызовы методов транзакций.
+     * В соединениях без поддержки транзакций система продолжит выполнения.
      *
      * Методы beginTransaction(), commit() и rollBack() становятся no-op операциями:
      * они выполняются успешно, но не оказывают реального влияния на данные.
@@ -34,5 +32,5 @@ enum TransactionSupportPolicy: string
      * Позволяет использовать единый код с транзакциями для разных драйверов,
      * включая те, где транзакции не реализованы или эмулируются.
      */
-    case SILENCE = 'silence';
+    case OPTIONAL = 'optional';
 }

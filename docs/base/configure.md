@@ -23,24 +23,10 @@
 
 ### Дополнительные параметры
 
-Кроме того есть возможность настроить кодировку подключения и политику поддержки транзакций. Выполнять это необходимо до
+Кроме того есть возможность настроить политику поддержки транзакций. Выполнять это необходимо до
 заморозки (конфигурация становится неизменяемой после первого обращения к менеджеру соединений) конфигурации системой.
 Это выполняется при первом подключении (подключение, в свою очередь, выполняется при
 первом запросе).
-
-#### Кодировка подключения
-
-По умолчанию в конфигурации принята кодировка `utf8mb4` ее можно изменить при помощи сеттера setCharset:
-
-```php
-use Vasoft\Joke\Db\Sql\SqlConnectionConfig;
-/** @var SqlConnectionConfig $config */
-$config->setCharset('utf8');
-// далее в коде можно обращаться к этому значению
-if ($config->charset === 'utf8') {
-    // ...
-}
-```
 
 #### Политика поддержки транзакций
 
@@ -119,12 +105,11 @@ return new DatabaseConfig()
 declare(strict_types=1);
 
 use Vasoft\Joke\Config\Environment;
-use Vasoft\Joke\Db\Sql\SqlConnectionConfig;
 use Vasoft\Joke\Db\Sql\DatabaseConfig;
 use Vasoft\Joke\Db\Sql\Driver\Pdo\Connection;
 use Vasoft\Joke\Support\FileSystem;
 
-$connection = new Connection(new Sql\SqlConnectionConfig('sqlite', ':memory:'));
+$connection = new Connection('sqlite', ':memory:');
 
 return new DatabaseConfig()
     ->addConnection('memory', $connection);
