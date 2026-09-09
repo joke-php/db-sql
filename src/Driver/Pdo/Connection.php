@@ -7,6 +7,7 @@ namespace Vasoft\Joke\Db\Sql\Driver\Pdo;
 use Vasoft\Joke\Db\Sql\Contract\ConnectionInterface;
 use Vasoft\Joke\Db\Sql\Contract\ResultInterface;
 use Vasoft\Joke\Db\Sql\Exceptions\QueryException;
+use Vasoft\Joke\Db\Sql\TransactionSupportPolicy;
 
 /**
  * PDO-реализация подключения к базе данных.
@@ -31,6 +32,10 @@ class Connection implements ConnectionInterface
      */
     public protected(set) int $transactionLevel = 0 {
         get => $this->transactionLevel;
+    }
+
+    public private(set) TransactionSupportPolicy $transactionSupportPolicy = TransactionSupportPolicy::REQUIRED {
+        get => $this->transactionSupportPolicy;
     }
 
     /**
@@ -94,6 +99,13 @@ class Connection implements ConnectionInterface
         }
 
         return $this->dsn;
+    }
+
+    public function setTransactionSupportPolicy(TransactionSupportPolicy $transactionSupportPolicy): static
+    {
+        $this->transactionSupportPolicy = $transactionSupportPolicy;
+
+        return $this;
     }
 
     /**
@@ -170,6 +182,12 @@ class Connection implements ConnectionInterface
      */
     public function beginTransaction(): void
     {
+        if (!$this->supportsTransactions && TransactionSupportPolicy::OPTIONAL === $this->transactionSupportPolicy) {
+            ++$this->transactionLevel;
+
+            return;
+        }
+
         try {
             $pdo = $this->ensureConnection();
             if (0 === $this->transactionLevel) {
@@ -196,6 +214,12 @@ class Connection implements ConnectionInterface
     {
         if (0 === $this->transactionLevel) {
             throw new QueryException('No active transaction.');
+        }
+
+        if (!$this->supportsTransactions && TransactionSupportPolicy::OPTIONAL === $this->transactionSupportPolicy) {
+            --$this->transactionLevel;
+
+            return;
         }
 
         try {
@@ -225,6 +249,12 @@ class Connection implements ConnectionInterface
     {
         if (0 === $this->transactionLevel) {
             throw new QueryException('No active transaction.');
+        }
+
+        if (!$this->supportsTransactions && TransactionSupportPolicy::OPTIONAL === $this->transactionSupportPolicy) {
+            --$this->transactionLevel;
+
+            return;
         }
 
         try {
@@ -258,6 +288,10 @@ class Connection implements ConnectionInterface
      */
     public function transaction(callable $callback): mixed
     {
+        if (!$this->supportsTransactions && TransactionSupportPolicy::OPTIONAL === $this->transactionSupportPolicy) {
+            return $callback($this);
+        }
+
         $this->beginTransaction();
 
         try {
@@ -297,5 +331,6 @@ class Connection implements ConnectionInterface
     {
         $this->pdo = null;
         $this->transactionLevel = 0;
+        $this->supportsTransactions = null;
     }
 }

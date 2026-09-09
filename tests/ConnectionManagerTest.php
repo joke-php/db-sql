@@ -25,6 +25,11 @@ use Vasoft\Joke\Support\FileSystem;
 #[TestDox('ConnectionManager - менеджер соединений с базами данных')]
 final class ConnectionManagerTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        MemoryConnection::$exceptionOnDisconnect = false;
+    }
+
     #[TestDox('Конструктор замораживает конфиг')]
     public function testFreezeConfig(): void
     {
@@ -111,6 +116,21 @@ final class ConnectionManagerTest extends TestCase
         $entity2 = $manager->connection('example1');
 
         self::assertNotSame($entity1, $entity2);
+    }
+
+    #[TestDox('Игнорируются ошибки при сбросе закешированных подключений')]
+    public function testResetIgnoreException(): void
+    {
+        $config = new DatabaseConfig()
+            ->addConnection('example1', MemoryConnection::class);
+
+        $manager = new ConnectionManager($config, new ServiceContainer());
+        $manager->connection('example1');
+        MemoryConnection::$exceptionOnDisconnect = true;
+        $manager->reset();
+        MemoryConnection::$exceptionOnDisconnect = false;
+        // не должно возникнуть исключений
+        self::assertTrue(true);
     }
 
     #[TestDox('Возвращает подключение по умолчанию при пустом имени')]

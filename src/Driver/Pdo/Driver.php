@@ -34,6 +34,8 @@ enum Driver: string
      * поддерживается ли указанный драйвер, и приводит неизвестные драйверы
      * к единому исключению ConfigException. А так же обеспечивает консистентность построения.
      *
+     * @param array<string,null|bool|float|int|string> $specificOptions
+     *
      * @return non-empty-string
      *
      * @throws ConfigException Если драйвер не распознан или отсутствуют обязательные параметры
@@ -60,6 +62,8 @@ enum Driver: string
      * Выполняет валидацию обязательных параметров (хост, имя БД) перед сборкой строки.
      * Если драйвер не поддерживается или отсутствуют критические параметры,
      * выбрасывается {@see ConfigException}.
+     *
+     * @param array<string,null|bool|float|int|string> $specificOptions
      *
      * @return non-empty-string Сформированная DSN-строка для PDO
      *
@@ -222,7 +226,7 @@ enum Driver: string
         self::ensureRequired($dto, 'host');
         self::ensureRequired($dto, 'database');
         $parts = [
-            'DSN' => $dto['DSN'],
+            'DSN' => $dto['DSN'] ?? null,
             'hostname' => $dto['host'],
             'port' => $dto['port'] ?? null,
             'database' => $dto['database'],
@@ -398,7 +402,8 @@ enum Driver: string
     /**
      * Проверяет наличие обязательного свойства в конфиге.
      *
-     * @param string $propertyName Имя свойства
+     * @param array<string,null|bool|float|int|string> $dto
+     * @param string                                   $propertyName Имя свойства
      *
      * @throws ConfigException Если свойство отсутствует или пусто
      */
@@ -412,7 +417,8 @@ enum Driver: string
     /**
      * Проверяет наличие хотя бы одного из альтернативных параметров.
      *
-     * @param list<string> $options Ассоциативный массив [имя_параметра => значение]
+     * @param array<string,null|bool|float|int|string> $dto
+     * @param list<string>                             $options Ассоциативный массив [имя_параметра => значение]
      *
      * @throws ConfigException Если все переданные параметры пусты
      */

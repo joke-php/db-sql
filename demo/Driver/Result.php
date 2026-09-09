@@ -37,12 +37,9 @@ class Result implements ResultInterface
         return $this->data;
     }
 
-    /**
-     * @return null|array<string, mixed>
-     */
-    public function fetch(): ?array
+    public function fetch(): false|array
     {
-        return $this->data[0] ?? null;
+        return $this->data[0] ?? false;
     }
 
     public function count(): int

@@ -16,6 +16,8 @@ use Vasoft\Joke\Db\Sql\Contract\ConnectionInterface;
  */
 class MemoryConnection extends BaseConnection implements ConnectionInterface
 {
+    public static bool $exceptionOnDisconnect = false;
+
     public function isConnected(): bool
     {
         // JsonConnection всегда «подключён» — данные в памяти
@@ -24,6 +26,8 @@ class MemoryConnection extends BaseConnection implements ConnectionInterface
 
     public function disconnect(): void
     {
-        // Нет внешнего ресурса для освобождения
+        if (self::$exceptionOnDisconnect) {
+            throw new \Exception('Connection not is disconnected');
+        }
     }
 }
