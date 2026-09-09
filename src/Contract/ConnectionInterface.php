@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Vasoft\Joke\Db\Sql\Contract;
 
 use Vasoft\Joke\Db\Sql\Exceptions\QueryException;
+use Vasoft\Joke\Db\Sql\Exceptions\TransactionException;
 
 /**
  * Контракт подключения к базе данных.
@@ -48,22 +49,22 @@ interface ConnectionInterface
     /**
      * Начинает транзакцию.
      *
-     * @throws QueryException если транзакции не поддерживаются
-     *                        и режим configured как "throw"
+     * @throws TransactionException если транзакции не поддерживаются
+     *                              и режим configured как "throw"
      */
     public function beginTransaction(): void;
 
     /**
      * Фиксирует текущую транзакцию.
      *
-     * @throws QueryException если нет активной транзакции
+     * @throws TransactionException если нет активной транзакции
      */
     public function commit(): void;
 
     /**
      * Откатывает текущую транзакцию.
      *
-     * @throws QueryException если нет активной транзакции
+     * @throws TransactionException если нет активной транзакции
      */
     public function rollBack(): void;
 
@@ -80,7 +81,9 @@ interface ConnectionInterface
      *
      * @return T возвращаемое значение callback
      *
-     * @throws \Throwable исключение, выброшенное callback (после rollBack)
+     * @throws \Throwable           исключение, выброшенное callback
+     * @throws QueryException       при ошибках запросов
+     * @throws TransactionException при ошибках транзакций
      */
     public function transaction(callable $callback): mixed;
 

@@ -11,6 +11,7 @@ use PHPUnit\Framework\Attributes\TestDox;
 use PHPUnit\Framework\TestCase;
 use Vasoft\Joke\Db\Sql\Driver\Pdo\Connection;
 use Vasoft\Joke\Db\Sql\Exceptions\QueryException;
+use Vasoft\Joke\Db\Sql\Exceptions\TransactionException;
 
 /**
  * @internal
@@ -160,10 +161,11 @@ final class ConnectionTest extends TestCase
         self::assertSame(1, $this->connection->query('SELECT COUNT(*) AS cnt FROM users')->fetch()['cnt']);
     }
 
-    #[TestDox('transaction() откатывает изменения при исключении в колбэке')]
+    #[TestDox('transaction() откатывает изменения при исключении в колбэке и не скрывает исключение')]
     public function testTransactionRollsBackOnException(): void
     {
-        $this->expectException(QueryException::class);
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessageIs('boom');
 
         try {
             $this->connection->transaction(static function (Connection $connection): void {
@@ -172,7 +174,6 @@ final class ConnectionTest extends TestCase
                 throw new \RuntimeException('boom');
             });
         } finally {
-            // Вставка должна быть откачена
             self::assertSame(0, $this->connection->query('SELECT COUNT(*) AS cnt FROM users')->fetch()['cnt']);
         }
     }
@@ -191,7 +192,7 @@ final class ConnectionTest extends TestCase
     #[TestDox('commit() без активной транзакции выбрасывает исключение')]
     public function testCommitWithoutTransactionThrows(): void
     {
-        $this->expectException(QueryException::class);
+        $this->expectException(TransactionException::class);
         $this->expectExceptionMessageIs('No active transaction.');
 
         $this->connection->commit();
@@ -206,7 +207,7 @@ final class ConnectionTest extends TestCase
         $pdoProperty = $reflection->getProperty('pdo');
         $pdoProperty->setValue($connection, null);
 
-        $this->expectException(QueryException::class);
+        $this->expectException(TransactionException::class);
 
         $connection->rollBack();
     }
@@ -258,7 +259,7 @@ final class ConnectionTest extends TestCase
 
         $originalPdo = $this->replacePdoWithMock($connection, $mockPdo);
 
-        $this->expectException(QueryException::class);
+        $this->expectException(TransactionException::class);
         $this->expectExceptionMessageIs('Simulated commit error');
 
         try {
@@ -278,7 +279,7 @@ final class ConnectionTest extends TestCase
             ->willThrowException(new \PDOException('Cannot start transaction', 21000));
         $originalPdo = $this->replacePdoWithMock($connection, $mockPdo);
 
-        $this->expectException(QueryException::class);
+        $this->expectException(TransactionException::class);
         $this->expectExceptionMessageIs('Cannot start transaction');
 
         try {
@@ -291,7 +292,7 @@ final class ConnectionTest extends TestCase
     #[TestDox('rollBack() без активной транзакции выбрасывает исключение')]
     public function testRollbackWithoutTransactionThrows(): void
     {
-        $this->expectException(QueryException::class);
+        $this->expectException(TransactionException::class);
         $this->expectExceptionMessageIs('No active transaction.');
 
         $this->connection->rollBack();
@@ -334,6 +335,68 @@ final class ConnectionTest extends TestCase
             self::assertTrue($connection->isConnected());
         } finally {
             unlink($tempFile);
+        }
+    }
+
+    #[TestDox('execute() Бросает исключение если PDO exec вернул false ')]
+    public function testExecuteThrowExceptionPdoExecReturnFalse(): void
+    {
+        $connection = $this->makeConnection(':memory:');
+
+        $mockPdo = self::createStub(\PDO::class);
+        $mockPdo->method('exec')
+            ->willReturn(false);
+        $originalPdo = $this->replacePdoWithMock($connection, $mockPdo);
+
+        $this->expectException(QueryException::class);
+        $this->expectExceptionMessageIs("Failed to execute SQL query: 'SELECT 1'.");
+
+        try {
+            $connection->execute('SELECT 1');
+        } finally {
+            $originalPdo = $this->replacePdoWithMock($connection, $originalPdo);
+        }
+    }
+
+    #[TestDox('transaction() сохраняет оригинальное исключение при ошибке rollBack')]
+    public function testTransactionPreservesOriginalExceptionWhenRollbackFails(): void
+    {
+        $connection = $this->makeConnection(':memory:');
+
+        $mockPdo = self::createMock(\PDO::class);
+        // beginTransaction() должен пройти успешно (вызывается внутри transaction())
+        $mockPdo->method('beginTransaction')->willReturn(true);
+        // rollBack() должен бросить исключение при втором вызове (первый при автоопределении поддержки)
+
+        $mockPdo->expects(self::exactly(2))
+            ->method('rollBack')
+            ->willReturnCallback(static function (): bool {
+                static $counter = 0;
+
+                if (1 === $counter) {
+                    throw new \PDOException('Rollback failed', 99000);
+                }
+                ++$counter;
+
+                return true;
+            });
+
+        $originalPdo = $this->replacePdoWithMock($connection, $mockPdo);
+
+        // Сбрасываем кэш supportsTransactions, чтобы property hook
+        // выполнил проверку на mock (и закэшировал true, т.к. beginTransaction не бросает)
+        $refCache = new \ReflectionProperty(Connection::class, 'supportsTransactions');
+        $refCache->setValue($connection, null);
+
+        try {
+            $this->expectException(\RuntimeException::class);
+            $this->expectExceptionMessageIs('original error');
+
+            $connection->transaction(static function (Connection $conn): never {
+                throw new \RuntimeException('original error');
+            });
+        } finally {
+            $this->replacePdoWithMock($connection, $originalPdo);
         }
     }
 }

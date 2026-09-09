@@ -8,7 +8,7 @@ use Vasoft\Joke\Db\Sql\Driver\Pdo\Connection;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\TestDox;
-use Vasoft\Joke\Db\Sql\Exceptions\QueryException;
+use Vasoft\Joke\Db\Sql\Exceptions\TransactionException;
 use Vasoft\Joke\Db\Sql\TransactionSupportPolicy;
 
 /**
@@ -52,7 +52,8 @@ final class ConnectionTransactionUnsupportedTest extends TestCase
     {
         $connection = $this->createConnection(TransactionSupportPolicy::REQUIRED);
 
-        $this->expectException(QueryException::class);
+        $this->expectException(TransactionException::class);
+        $this->expectExceptionMessageIs('This driver does not support transactions');
 
         $connection->beginTransaction();
     }
@@ -94,7 +95,7 @@ final class ConnectionTransactionUnsupportedTest extends TestCase
     {
         $connection = $this->createConnection(TransactionSupportPolicy::OPTIONAL);
 
-        $this->expectException(QueryException::class);
+        $this->expectException(TransactionException::class);
         $this->expectExceptionMessageIs('No active transaction.');
 
         $connection->commit();
@@ -105,7 +106,7 @@ final class ConnectionTransactionUnsupportedTest extends TestCase
     {
         $connection = $this->createConnection(TransactionSupportPolicy::OPTIONAL);
 
-        $this->expectException(QueryException::class);
+        $this->expectException(TransactionException::class);
         $this->expectExceptionMessageIs('No active transaction.');
 
         $connection->rollBack();

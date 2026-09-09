@@ -7,6 +7,7 @@ namespace Vasoft\Joke\Db\Sql\Driver\Pdo;
 use Vasoft\Joke\Db\Sql\Contract\ConnectionInterface;
 use Vasoft\Joke\Db\Sql\Contract\ResultInterface;
 use Vasoft\Joke\Db\Sql\Exceptions\QueryException;
+use Vasoft\Joke\Db\Sql\Exceptions\TransactionException;
 use Vasoft\Joke\Db\Sql\TransactionSupportPolicy;
 
 /**
@@ -178,7 +179,7 @@ class Connection implements ConnectionInterface
      * На уровне 1 выполняет реальный старт.
      * На уровнях >1 создаёт savepoint с именем {@see SAVE_POINT_PREFIX}{level}.
      *
-     * @throws QueryException при ошибке начала транзакции или создания savepoint
+     * @throws TransactionException при ошибке начала транзакции или создания savepoint
      */
     public function beginTransaction(): void
     {
@@ -197,7 +198,7 @@ class Connection implements ConnectionInterface
             }
             ++$this->transactionLevel;
         } catch (\PDOException $e) {
-            throw new QueryException($e->getMessage(), 0, $e);
+            throw new TransactionException($e->getMessage(), 0, $e);
         }
     }
 
@@ -208,12 +209,12 @@ class Connection implements ConnectionInterface
      * На уровнях >1 освобождает savepoint текущего уровня.
      * Уровень уменьшается в finally, гарантируя корректное состояние даже при ошибке.
      *
-     * @throws QueryException если нет активной транзакции или ошибка фиксации/savepoint
+     * @throws TransactionException если нет активной транзакции или ошибка фиксации/savepoint
      */
     public function commit(): void
     {
         if (0 === $this->transactionLevel) {
-            throw new QueryException('No active transaction.');
+            throw new TransactionException('No active transaction.');
         }
 
         if (!$this->supportsTransactions && TransactionSupportPolicy::OPTIONAL === $this->transactionSupportPolicy) {
@@ -230,7 +231,7 @@ class Connection implements ConnectionInterface
                 $pdo->exec('RELEASE SAVEPOINT ' . static::SAVE_POINT_PREFIX . $this->transactionLevel);
             }
         } catch (\PDOException $e) {
-            throw new QueryException($e->getMessage(), 0, $e);
+            throw new TransactionException($e->getMessage(), 0, $e);
         } finally {
             --$this->transactionLevel;
         }
@@ -243,12 +244,12 @@ class Connection implements ConnectionInterface
      * На уровнях >1 откатывает до savepoint текущего уровня.
      * Уровень уменьшается в finally, гарантируя корректное состояние даже при ошибке.
      *
-     * @throws QueryException если нет активной транзакции или ошибка отката/savepoint
+     * @throws TransactionException если нет активной транзакции или ошибка отката/savepoint
      */
     public function rollBack(): void
     {
         if (0 === $this->transactionLevel) {
-            throw new QueryException('No active transaction.');
+            throw new TransactionException('No active transaction.');
         }
 
         if (!$this->supportsTransactions && TransactionSupportPolicy::OPTIONAL === $this->transactionSupportPolicy) {
@@ -265,7 +266,7 @@ class Connection implements ConnectionInterface
                 $pdo->exec('ROLLBACK TO SAVEPOINT ' . static::SAVE_POINT_PREFIX . $this->transactionLevel);
             }
         } catch (\PDOException $e) {
-            throw new QueryException($e->getMessage(), 0, $e);
+            throw new TransactionException($e->getMessage(), 0, $e);
         } finally {
             --$this->transactionLevel;
         }
@@ -284,7 +285,9 @@ class Connection implements ConnectionInterface
      *
      * @return T возвращаемое значение callback
      *
-     * @throws QueryException при ошибке транзакции или исключении из callback
+     * @throws \Throwable           исключение, выброшенное callback
+     * @throws QueryException       при ошибках запросов
+     * @throws TransactionException при ошибках транзакций
      */
     public function transaction(callable $callback): mixed
     {
@@ -303,13 +306,14 @@ class Connection implements ConnectionInterface
             // Откатываемся только если транзакция ещё активна
             // (например, commit() сам упал и уже сбросил уровень в finally).
             if ($this->transactionLevel > 0) {
-                $this->rollBack();
-            }
-            if ($e instanceof QueryException) {
-                throw $e;
+                try {
+                    $this->rollBack();
+                } catch (TransactionException $internal) {
+                    // Ошибка отката не должна скрывать оригинальное исключение
+                }
             }
 
-            throw new QueryException($e->getMessage(), $e->getCode(), $e);
+            throw $e;
         }
     }
 
