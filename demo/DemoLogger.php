@@ -23,7 +23,7 @@ class DemoLogger implements SqlLoggerInterface
     private function write(string $section, string|array $message): void
     {
         $logMessage = is_array($message) ? print_r($message, true) : $message;
-        $this->fs->writeFile(
+        $this->fs->writeFileAppendSafe(
             $this->logName,
             sprintf("[%s] %s: %s\n", $section, date('Y-m-d H:i:s'), $logMessage),
             FILE_APPEND,
@@ -48,7 +48,7 @@ class DemoLogger implements SqlLoggerInterface
 
     public function transactionCommitted(int $level): void
     {
-        $this->write(self::SECTION_TRANSACTION, 'Commited transaction level: ' . $level);
+        $this->write(self::SECTION_TRANSACTION, 'Committed transaction level: ' . $level);
     }
 
     public function transactionRolledBack(int $level): void
