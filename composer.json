@@ -5,7 +5,7 @@
   "version": "0.0.1",
   "require": {
     "php": "^8.5",
-    "voral/joke": "^1.5",
+    "voral/joke": "^1.6",
     "ext-pdo": "*"
   },
   "require-dev": {
@@ -15,7 +15,7 @@
     "friendsofphp/php-cs-fixer": "^3.95",
     "phpstan/phpstan": "^2.1",
     "phpstan/phpstan-phpunit": "^2.0",
-    "ext-sqlite": "*"
+    "ext-sqlite3": "*"
   },
   "license": "MIT",
   "autoload": {

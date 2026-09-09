@@ -4,20 +4,20 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "669a91ccf62bd14a22dcd41f7bb29692",
+    "content-hash": "7057db95cdf9c8ccbb542b2b4eba7972",
     "packages": [
         {
             "name": "voral/joke",
-            "version": "1.5.0",
+            "version": "1.6.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/joke-php/joke.git",
-                "reference": "d2c28e742363c574db9196f2e5f76db214464b09"
+                "reference": "6ea90e3dcb533da2984190cfb7077636ba1f53dc"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/joke-php/joke/zipball/d2c28e742363c574db9196f2e5f76db214464b09",
-                "reference": "d2c28e742363c574db9196f2e5f76db214464b09",
+                "url": "https://api.github.com/repos/joke-php/joke/zipball/6ea90e3dcb533da2984190cfb7077636ba1f53dc",
+                "reference": "6ea90e3dcb533da2984190cfb7077636ba1f53dc",
                 "shasum": ""
             },
             "require": {
@@ -52,9 +52,9 @@
             "description": "A minimal PHP microframework with manual routing and dependency injection container.",
             "support": {
                 "issues": "https://github.com/joke-php/joke/issues",
-                "source": "https://github.com/joke-php/joke/tree/v1.5.0"
+                "source": "https://github.com/joke-php/joke/tree/v1.6.0"
             },
-            "time": "2026-08-21T07:26:28+00:00"
+            "time": "2026-09-09T08:00:01+00:00"
         }
     ],
     "packages-dev": [
@@ -5140,8 +5140,11 @@
     "prefer-stable": false,
     "prefer-lowest": false,
     "platform": {
-        "php": "^8.5"
+        "php": "^8.5",
+        "ext-pdo": "*"
     },
-    "platform-dev": {},
+    "platform-dev": {
+        "ext-sqlite3": "*"
+    },
     "plugin-api-version": "2.9.0"
 }
