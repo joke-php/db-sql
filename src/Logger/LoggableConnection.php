@@ -10,6 +10,7 @@ use Vasoft\Joke\Db\Sql\Contract\ResultInterface;
 use Vasoft\Joke\Db\Sql\ConnectionManager;
 use Vasoft\Joke\Db\Sql\Exceptions\DatabaseException;
 use Vasoft\Joke\Db\Sql\Exceptions\QueryException;
+use Vasoft\Joke\Db\Sql\Exceptions\TransactionException;
 
 /**
  * Декоратор соединения, добавляющий логирование SQL-запросов и транзакций.
@@ -107,7 +108,7 @@ final class LoggableConnection implements ConnectionInterface
     /**
      * Начинает новую транзакцию.
      *
-     * @throws QueryException В случае ошибок запросов и транзакций
+     * @throws TransactionException В случае ошибок запросов и транзакций
      */
     public function beginTransaction(): void
     {
@@ -118,7 +119,7 @@ final class LoggableConnection implements ConnectionInterface
     /**
      * Фиксирует текущую транзакцию.
      *
-     * @throws QueryException В случае ошибок запросов и транзакций
+     * @throws TransactionException В случае ошибок запросов и транзакций
      */
     public function commit(): void
     {
@@ -130,7 +131,7 @@ final class LoggableConnection implements ConnectionInterface
     /**
      * Откатывает текущую транзакцию.
      *
-     * @throws QueryException В случае ошибок запросов и транзакций
+     * @throws TransactionException В случае ошибок запросов и транзакций
      */
     public function rollBack(): void
     {
@@ -151,7 +152,9 @@ final class LoggableConnection implements ConnectionInterface
      *
      * @return T возвращаемое значение callback
      *
-     * @throws QueryException В случае ошибок запросов и транзакций
+     * @throws \Throwable           исключение, выброшенное callback
+     * @throws QueryException       при ошибках запросов
+     * @throws TransactionException при ошибках транзакций
      */
     public function transaction(callable $callback): mixed
     {
@@ -166,11 +169,7 @@ final class LoggableConnection implements ConnectionInterface
         } catch (\Throwable $e) {
             $this->logger->transactionRolledBack($newLevel);
 
-            if ($e instanceof DatabaseException) {
-                throw $e;
-            }
-
-            throw new QueryException($e->getMessage(), 0, $e);
+            throw $e;
         }
     }
 

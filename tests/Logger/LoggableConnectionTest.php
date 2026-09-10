@@ -311,8 +311,8 @@ final class LoggableConnectionTest extends TestCase
         $conn->transaction(static fn() => null);
     }
 
-    #[TestDox('transaction() логирует старт и откат и оборачивает сторонние исключения')]
-    public function testTransactionRollsBackAndWrapsUnknownException(): void
+    #[TestDox('transaction() логирует старт и откат и пропускает сторонние исключения')]
+    public function testTransactionRollsBackAndNotWrapsUnknownException(): void
     {
         $inner = new class implements ConnectionInterface {
             public int $transactionLevel {
@@ -354,7 +354,7 @@ final class LoggableConnectionTest extends TestCase
 
         $conn = new LoggableConnection($inner, $logger);
 
-        $this->expectException(QueryException::class);
+        $this->expectException(\RuntimeException::class);
         $conn->transaction(static fn() => null);
     }
 
