@@ -122,8 +122,9 @@ final class LoggableConnection implements ConnectionInterface
      */
     public function commit(): void
     {
+        $level = $this->inner->transactionLevel;
         $this->inner->commit();
-        $this->logger->transactionCommitted($this->inner->transactionLevel);
+        $this->logger->transactionCommitted($level);
     }
 
     /**
