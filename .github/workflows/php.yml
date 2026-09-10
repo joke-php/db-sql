@@ -1,0 +1,37 @@
+name: PHP Compatibility Test
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+permissions:
+  contents: read
+
+jobs:
+  php-test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php-version: ['8.5', '8.6']
+    name: PHP ${{ matrix.php-version }} Test
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          extensions: json
+          tools: composer
+          ini-values: |
+            opcache.enable=0
+            opcache.enable_cli=0
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress --no-suggest
+
+      - name: Run tests
+        run: composer test
