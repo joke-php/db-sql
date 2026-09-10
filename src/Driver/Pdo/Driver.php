@@ -108,7 +108,7 @@ enum Driver: string
             return "odbc:{$dto['DSN']}";
         }
 
-        self::ensureRequiredAlternative($dto, ['database', 'host']);
+        $this->ensureRequiredAlternative($dto, ['database', 'host']);
 
         $parts = [];
 
@@ -146,7 +146,7 @@ enum Driver: string
      */
     private function oci(array $dto): string
     {
-        self::ensureRequiredAlternative($dto, ['database', 'tns']);
+        $this->ensureRequiredAlternative($dto, ['database', 'tns']);
 
         $parts = [
             'dbname' => $dto['database'] ?? null,
@@ -154,7 +154,7 @@ enum Driver: string
             'tns' => $dto['tns'] ?? null,
         ];
 
-        return 'oci:' . self::formatOptions($parts);
+        return 'oci:' . $this->formatOptions($parts);
     }
 
     /**
@@ -166,7 +166,7 @@ enum Driver: string
      */
     private function sqlsrv(array $dto): string
     {
-        self::ensureRequired($dto, 'database');
+        $this->ensureRequired($dto, 'database');
 
         $server = $dto['host'] ?? null;
         if (null !== $server && !empty($dto['port'])) {
@@ -183,7 +183,7 @@ enum Driver: string
             'TrustServerCertificate' => $dto['TrustServerCertificate'] ?? null,
         ];
 
-        return 'sqlsrv:' . self::formatOptions($parts);
+        return 'sqlsrv:' . $this->formatOptions($parts);
     }
 
     /**
@@ -196,9 +196,9 @@ enum Driver: string
     private function informix(array $dto): string
     {
         if (empty($dto['DSN'])) {
-            self::ensureRequired($dto, 'host');
-            self::ensureRequired($dto, 'database');
-            self::ensureRequired($dto, 'server');
+            $this->ensureRequired($dto, 'host');
+            $this->ensureRequired($dto, 'database');
+            $this->ensureRequired($dto, 'server');
         }
 
         $parts = [
@@ -211,7 +211,7 @@ enum Driver: string
             'EnableScrollableCursors' => $dto['EnableScrollableCursors'] ?? null,
         ];
 
-        return 'informix:' . self::formatOptions($parts);
+        return 'informix:' . $this->formatOptions($parts);
     }
 
     /**
@@ -223,8 +223,8 @@ enum Driver: string
      */
     private function ibm(array $dto): string
     {
-        self::ensureRequired($dto, 'host');
-        self::ensureRequired($dto, 'database');
+        $this->ensureRequired($dto, 'host');
+        $this->ensureRequired($dto, 'database');
         $parts = [
             'DSN' => $dto['DSN'] ?? null,
             'hostname' => $dto['host'],
@@ -232,7 +232,7 @@ enum Driver: string
             'database' => $dto['database'],
         ];
 
-        return 'ibm:' . self::formatOptions($parts);
+        return 'ibm:' . $this->formatOptions($parts);
     }
 
     /**
@@ -244,7 +244,7 @@ enum Driver: string
      */
     private function firebird(array $dto): string
     {
-        self::ensureRequired($dto, 'database');
+        $this->ensureRequired($dto, 'database');
         $host = $dto['host'];
         if ('' !== $host) {
             if (null !== $dto['port']) {
@@ -262,7 +262,7 @@ enum Driver: string
             'dialect' => $dto['dialect'] ?? null,
         ];
 
-        return 'firebird:' . self::formatOptions($parts);
+        return 'firebird:' . $this->formatOptions($parts);
     }
 
     /**
@@ -274,8 +274,8 @@ enum Driver: string
      */
     private function dblib(array $dto): string
     {
-        self::ensureRequired($dto, 'host');
-        self::ensureRequired($dto, 'database');
+        $this->ensureRequired($dto, 'host');
+        $this->ensureRequired($dto, 'database');
         $host = $dto['host'];
         if (!empty($dto['port'])) {
             $host .= ':' . $dto['port'];
@@ -289,7 +289,7 @@ enum Driver: string
             'secure' => $dto['secure'] ?? null,
         ];
 
-        return $this->value . ':' . self::formatOptions($parts);
+        return $this->value . ':' . $this->formatOptions($parts);
     }
 
     /**
@@ -301,8 +301,8 @@ enum Driver: string
      */
     private function cubrid(array $dto): string
     {
-        self::ensureRequired($dto, 'host');
-        self::ensureRequired($dto, 'database');
+        $this->ensureRequired($dto, 'host');
+        $this->ensureRequired($dto, 'database');
         $parts = [
             'host' => $dto['host'],
             'port' => $dto['port'],
@@ -312,7 +312,7 @@ enum Driver: string
             'loginslowtime' => $dto['loginslowtime'] ?? null,
         ];
 
-        return 'cubrid:' . self::formatOptions($parts);
+        return 'cubrid:' . $this->formatOptions($parts);
     }
 
     /**
@@ -324,8 +324,8 @@ enum Driver: string
      */
     private function mysql(array $dto): string
     {
-        self::ensureRequiredAlternative($dto, ['host', 'unix_socket']);
-        self::ensureRequired($dto, 'database');
+        $this->ensureRequiredAlternative($dto, ['host', 'unix_socket']);
+        $this->ensureRequired($dto, 'database');
         $parts = [
             'host' => $dto['host'],
             'unix_socket' => $dto['unix_socket'] ?? null,
@@ -334,7 +334,7 @@ enum Driver: string
             'charset' => $dto['charset'] ?? null,
         ];
 
-        return 'mysql:' . self::formatOptions($parts);
+        return 'mysql:' . $this->formatOptions($parts);
     }
 
     /**
@@ -347,8 +347,8 @@ enum Driver: string
      */
     private function pgsql(array $dto): string
     {
-        self::ensureRequiredAlternative($dto, ['host', 'unix_socket']);
-        self::ensureRequired($dto, 'database');
+        $this->ensureRequiredAlternative($dto, ['host', 'unix_socket']);
+        $this->ensureRequired($dto, 'database');
         $parts = [
             'host' => $dto['host'] ?? $dto['unix_socket'],
             'port' => $dto['port'] ?? null,
@@ -356,7 +356,7 @@ enum Driver: string
             'sslmode' => $dto['sslmode'] ?? null,
         ];
 
-        return 'pgsql:' . self::formatOptions($parts);
+        return 'pgsql:' . $this->formatOptions($parts);
     }
 
     /**
@@ -368,7 +368,7 @@ enum Driver: string
      */
     private function sqlite(array $dto): string
     {
-        self::ensureRequired($dto, 'database');
+        $this->ensureRequired($dto, 'database');
 
         return "sqlite:{$dto['database']}";
     }

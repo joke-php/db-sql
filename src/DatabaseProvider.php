@@ -33,7 +33,7 @@ class DatabaseProvider extends AbstractProvider
     }
 
     /**
-     * @return list<class-string>
+     * @return list<class-string|string>
      */
     public function provides(): array
     {
