@@ -10,6 +10,14 @@
 также реализацию на базе PDO. Поддерживаются драйверы: `dblib`, `cubrid`, `odbc`, `mysql`,
 `pgsql`, `sqlite`, `firebird`, `ibm`, `informix`, `oci`, `sqlsrv`.
 
+---
+
+[![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/joke-php/db-sql/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/joke-php/db-sql/?branch=master)
+[![Code Coverage](https://scrutinizer-ci.com/g/joke-php/db-sql/badges/coverage.png?b=master)](https://scrutinizer-ci.com/g/joke-php/db-sql/?branch=master)
+![PHP Tests](https://github.com/joke-php/db-sql/actions/workflows/php.yml/badge.svg)
+
+---
+
 Модуль предполагает три уровня взаимодействия с базами данных:
 
 - **Низкий уровень (реализовано)** — работа с сырыми SQL-запросами.
