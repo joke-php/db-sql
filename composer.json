@@ -2,7 +2,7 @@
     "name": "joke-php/db-sql",
     "description": "Database integration for Joke framework",
     "type": "library",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "require": {
         "php": "^8.5",
         "voral/joke": "^1.6",
