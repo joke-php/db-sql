@@ -81,7 +81,7 @@ use Vasoft\Joke\Db\Sql\Contract\ResultInterface;
 use Vasoft\Joke\Db\Sql\ConnectionManager;
 use Vasoft\Joke\Db\Sql\Exceptions\QueryException;
 
-class UserRepository{
+class UserRepository {
     private ConnectionInterface $connection; 
     public function __construct(ConnectionManager $manager) {
         $this->connection = $manager->connection();
@@ -100,7 +100,7 @@ class UserRepository{
     * @throws QueryException
     */
     public function nameContain(string $name): ResultInterface {
-        $value = '%' . $name '%';
+        $value = '%' . $name . '%';
         return $this->connection->query('SELECT id, name, age FROM users WHERE name LIKE :name', ['name' => $value]);
     }
 }

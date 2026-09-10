@@ -3,8 +3,8 @@
 ## Требования
 
 - **PHP 8.5+** — используются возможности введенные с версии 8.5, на более ранних версиях пакет не запустится.
-- **Расширения PHP** — Необходимы расширение PDO и в режиме разработки sqlite.
-- **Фреймворк** — `voral/joke` ^1.5.
+- **Расширения PHP** — обязательно `pdo`, а также `pdo_sqlite3` для режима разработки.
+- **Фреймворк** — `voral/joke` ^1.6.
 
 ## Установка
 
@@ -33,8 +33,8 @@ return new KernelConfig()
 В конфигурации модуля регистрируйте необходимые подключения
 
 ```php
-// config/database.php
 <?php
+// config/database.php
 
 /** @var Environment $env */
 
@@ -42,15 +42,20 @@ declare(strict_types=1);
 
 use Vasoft\Joke\Config\Environment;
 use Vasoft\Joke\Db\Sql\DatabaseConfig;
+use Vasoft\Joke\Db\Sql\Demo\Driver\JsonConnection;
 use Vasoft\Joke\Db\Sql\Driver\Pdo\Connection;
-
-$databasePath = dirname(__DIR__) . '/' . $env->get('SQLITEDATABASE');
+use Vasoft\Joke\Support\FileSystem;
 
 return new DatabaseConfig()
-    ->addConnection('default', static fn() => new Connection('sqlite', $databasePath))
-    // Можно использовать свой класс, реализующий интерфейс соединения
-    ->addConnection('second', CustomConnection::class)
-    ->setDefaultConnectionName('default');
+    ->addConnection(
+        'default',
+        static function (Environment $env, FileSystem $fs) {
+            $databasePath = $fs->atBase($env->get('SQLITEDATABASE'));
+
+            return new Connection('sqlite', $databasePath);
+        },
+    )
+    ->addConnection('json', JsonConnection::class);
 
 ```
 
