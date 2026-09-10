@@ -8,6 +8,12 @@
 /.github export-ignore
 /tests export-ignore
 /demo export-ignore
+/bootstrap export-ignore
+/config export-ignore
+/docs export-ignore
+/public export-ignore
+/routes export-ignore
+/storage export-ignore
 
 CHANGELOG.md export-ignore
 .php-cs-fixer.php export-ignore
@@ -16,5 +22,6 @@ phpunit.xml export-ignore
 composer.lock export-ignore
 .gitignore export-ignore
 .gitattributes export-ignore
+.env export-ignore
 
 
