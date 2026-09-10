@@ -39,6 +39,7 @@ class Result implements ResultInterface
     {
         try {
             while ($row = $this->statement->fetch(\PDO::FETCH_ASSOC)) {
+                /** @var array<string, mixed> $row */
                 yield $row;
             }
         } catch (\PDOException $e) {
@@ -80,6 +81,7 @@ class Result implements ResultInterface
     public function all(): array
     {
         try {
+            /** @var list<array<string, mixed>> */
             return array_values($this->statement->fetchAll(\PDO::FETCH_ASSOC));
         } catch (\PDOException $e) {
             throw new QueryException($e->getMessage(), $e->getCode(), $e);
@@ -100,6 +102,7 @@ class Result implements ResultInterface
     public function fetch(): false|array
     {
         try {
+            /** @var array<string, mixed>|false */
             return $this->statement->fetch(\PDO::FETCH_ASSOC);
         } catch (\PDOException $e) {
             throw new QueryException($e->getMessage(), $e->getCode(), $e);
