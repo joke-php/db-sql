@@ -19,10 +19,8 @@ use Vasoft\Joke\Db\Sql\Exceptions\TransactionException;
  */
 abstract class BaseConnection implements ConnectionInterface
 {
-    public int $transactionLevel = 0 {
-        get {
-            return $this->transactionLevel;
-        }
+    public private(set) int $transactionLevel = 0 {
+        get => $this->transactionLevel;
     }
     /**
      * @var array<string, list<array<string, mixed>>> хранилище данных по коллекциям
@@ -54,7 +52,6 @@ abstract class BaseConnection implements ConnectionInterface
      *
      * Поддерживаемые операции:
      * - CREATE TABLE table_name (column1, column2, ...)
-     * - INSERT INTO table_name VALUES (value1, value2, ...)
      * - INSERT INTO table_name (col1, col2) VALUES (value1, value2)
      *
      * @param string $sql    SQL-запрос
@@ -72,28 +69,12 @@ abstract class BaseConnection implements ConnectionInterface
             $tableName = strtolower($matches[1]);
 
             if (isset($this->store[$tableName])) {
-                throw new QueryException("Таблица '{$tableName}' уже существует.");
+                return 0;
             }
 
             $this->store[$tableName] = [];
 
             return 0;
-        }
-
-        // INSERT INTO table_name VALUES (...)
-        if (preg_match('/^\s*INSERT\s+INTO\s+(\w+)\s+VALUES\s*\((.+?)\)\s*$/is', $trimmedSql, $matches)) {
-            $tableName = strtolower($matches[1]);
-            $valuesStr = $matches[2];
-
-            $values = $this->parseValues($valuesStr);
-
-            if (!isset($this->store[$tableName])) {
-                throw new QueryException("Таблица '{$tableName}' не существует.");
-            }
-
-            $this->store[$tableName][] = $values;
-
-            return 1;
         }
 
         // INSERT INTO table_name (col1, col2) VALUES (val1, val2)

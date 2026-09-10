@@ -10,8 +10,6 @@ use Vasoft\Joke\Support\FileSystem;
 
 /**
  * Демонстрационная реализация ConnectionInterface на основе JSON-файла.
- *
- * @todo реализовать хранение в JSON
  */
 class JsonConnection extends BaseConnection implements ConnectionInterface
 {
@@ -21,6 +19,9 @@ class JsonConnection extends BaseConnection implements ConnectionInterface
 
     private function ensureConnection(): void
     {
+        if ('' !== $this->file) {
+            return;
+        }
         $this->file = $this->fs->atBase('/storage/demo.json');
         if (file_exists($this->file)) {
             $data = $this->fs->readFile($this->file);
@@ -36,6 +37,7 @@ class JsonConnection extends BaseConnection implements ConnectionInterface
     public function disconnect(): void
     {
         $this->fs->writeFileSafe($this->file, json_encode($this->store, JSON_PRETTY_PRINT));
+        $this->file = '';
     }
 
     public function execute(string $sql, array $params = []): int
@@ -62,5 +64,6 @@ class JsonConnection extends BaseConnection implements ConnectionInterface
     {
         $this->ensureConnection();
         parent::commit();
+        $this->fs->writeFileSafe($this->file, json_encode($this->store, JSON_PRETTY_PRINT));
     }
 }

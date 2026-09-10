@@ -26,7 +26,6 @@ class DemoLogger implements SqlLoggerInterface
         $this->fs->writeFileAppendSafe(
             $this->logName,
             sprintf("[%s] %s: %s\n", $section, date('Y-m-d H:i:s'), $logMessage),
-            FILE_APPEND,
         );
     }
 
