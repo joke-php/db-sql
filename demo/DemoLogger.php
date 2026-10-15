@@ -15,7 +15,7 @@ class DemoLogger implements SqlLoggerInterface
 
     public function __construct(private readonly FileSystem $fs, string $name)
     {
-        $dir = $fs->atLog('/database/');
+        $dir = $fs->atLog('database/');
         $fs->ensureDirectory($dir);
         $this->logName = $dir . $name . '.log';
     }

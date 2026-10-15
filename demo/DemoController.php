@@ -6,10 +6,14 @@ namespace Vasoft\Joke\Db\Sql\Demo;
 
 use Vasoft\Joke\Container\ServiceContainer;
 use Vasoft\Joke\Db\Sql\ConnectionManager;
+use Vasoft\Joke\Http\Cookies\CookieCollection;
 use Vasoft\Joke\Http\Csrf\CsrfTokenManager;
 use Vasoft\Joke\Http\HttpRequest;
 use Vasoft\Joke\Http\Response\HtmlPageResponse;
 use Vasoft\Joke\Db\Sql\Contract\ConnectionInterface;
+use Vasoft\Joke\Http\Response\RedirectResponse;
+use Vasoft\Joke\Http\Response\ResponseBuilder;
+use Vasoft\Joke\Http\Response\ResponseStatus;
 use Vasoft\Joke\Support\FileSystem;
 
 class DemoController
@@ -18,7 +22,7 @@ class DemoController
         ServiceContainer $container,
         HttpRequest $request,
         ConnectionManager $manager,
-    ): void {
+    ): RedirectResponse {
         $logger = $container->make(static fn(FileSystem $fs) => new DemoLogger($fs, 'demo'));
         $connection = $manager->loggable($logger);
         $this->ensureTable($connection);
@@ -27,10 +31,19 @@ class DemoController
             $connection->beginTransaction();
             $this->addRow($request, $connection);
             $connection->commit();
-            header('Location: /');
-            exit;
+
+            return $container->make(
+                RedirectResponse::class,
+                [
+                    'redirectUrl' => '/',
+                    'status' => ResponseStatus::SEE_OTHER,
+                    'cookies' => $container->make(CookieCollection::class, ['isSecureConnection' => false]),
+                ],
+            );
         } catch (\Throwable $exception) {
-            $connection->rollBack();
+            if ($connection->transactionLevel > 0) {
+                $connection->rollBack();
+            }
 
             throw $exception;
         }
@@ -40,8 +53,9 @@ class DemoController
         ServiceContainer $container,
         HttpRequest $request,
         ConnectionManager $manager,
+        ResponseBuilder $builder,
     ): HtmlPageResponse {
-        $result = new HtmlPageResponse($container);
+        $result = $builder->buildResponse(HtmlPageResponse::class);
         $tokenName = CsrfTokenManager::CSRF_TOKEN_NAME;
         $tokenValue = $request->session->get(CsrfTokenManager::CSRF_TOKEN_NAME);
 
