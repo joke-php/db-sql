@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Vasoft\Joke\Db\Sql\Tests\Logger;
 
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\TestDox;
 use PHPUnit\Framework\TestCase;
@@ -50,18 +51,14 @@ final class LoggableConnectionTest extends TestCase
     /**
      * Создаёт объект соединения с настраиваемым transactionLevel.
      */
-    private function stubConnection(int $level = 0): ConnectionInterface
+    private function stubConnection(int $level = 0, string $lastInsertId = '1'): ConnectionInterface
     {
-        return new class ($level) implements ConnectionInterface {
+        return new class ($level, $lastInsertId) implements ConnectionInterface {
             public int $transactionLevel {
                 get => $this->level;
             }
-            private int $level;
 
-            public function __construct(int $level)
-            {
-                $this->level = $level;
-            }
+            public function __construct(private readonly int $level, private readonly string $lastInsertId) {}
 
             public function query(string $sql, array $params = []): ResultInterface
             {
@@ -90,6 +87,11 @@ final class LoggableConnectionTest extends TestCase
             }
 
             public function disconnect(): void {}
+
+            public function getLastInsertId(?string $sequenceName = null): string
+            {
+                return $this->lastInsertId;
+            }
         };
     }
 
@@ -299,6 +301,11 @@ final class LoggableConnectionTest extends TestCase
             }
 
             public function disconnect(): void {}
+
+            public function getLastInsertId(?string $sequenceName = null): string
+            {
+                return '1';
+            }
         };
 
         $logger = self::createMock(SqlLoggerInterface::class);
@@ -309,6 +316,18 @@ final class LoggableConnectionTest extends TestCase
 
         $this->expectException(DatabaseException::class);
         $conn->transaction(static fn() => null);
+    }
+
+    #[TestDox('getLastInsertId() возвращает идентификатор')]
+    #[AllowMockObjectsWithoutExpectations]
+    public function testGetLastInsertId(): void
+    {
+        $inner = $this->stubConnection(0, '10');
+
+        $logger = self::createMock(SqlLoggerInterface::class);
+        $conn = new LoggableConnection($inner, $logger);
+
+        self::assertSame('10', $conn->getLastInsertId());
     }
 
     #[TestDox('transaction() логирует старт и откат и пропускает сторонние исключения')]
@@ -346,6 +365,11 @@ final class LoggableConnectionTest extends TestCase
             }
 
             public function disconnect(): void {}
+
+            public function getLastInsertId(?string $sequenceName = null): string
+            {
+                return '1';
+            }
         };
 
         $logger = self::createMock(SqlLoggerInterface::class);

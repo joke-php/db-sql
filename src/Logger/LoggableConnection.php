@@ -187,4 +187,9 @@ final class LoggableConnection implements ConnectionInterface
     {
         return (hrtime(true) - $start) / 1e6;
     }
+
+    public function getLastInsertId(?string $sequenceName = null): string
+    {
+        return $this->inner->getLastInsertId($sequenceName);
+    }
 }

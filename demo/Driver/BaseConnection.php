@@ -247,4 +247,9 @@ abstract class BaseConnection implements ConnectionInterface
     abstract public function isConnected(): bool;
 
     abstract public function disconnect(): void;
+
+    public function getLastInsertId(?string $sequenceName = null): string
+    {
+        return (string) (count($this->store) - 1);
+    }
 }

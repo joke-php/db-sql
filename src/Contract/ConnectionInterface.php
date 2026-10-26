@@ -101,4 +101,16 @@ interface ConnectionInterface
      * новое ленивое соединение.
      */
     public function disconnect(): void;
+
+    /**
+     * Возвращает ID последней вставленной строки для текущего соединения.
+     *
+     * Важно: возвращает результат последнего успешного INSERT.
+     * Для PostgreSQL может потребоваться указание имени последовательности.
+     *
+     * @param null|string $sequenceName Имя последовательности (для PostgreSQL)
+     *
+     * @return string ID записи
+     */
+    public function getLastInsertId(?string $sequenceName = null): string;
 }

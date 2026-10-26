@@ -6,7 +6,9 @@ declare(strict_types=1);
 
 namespace Vasoft\Joke\Db\Sql\Tests\Driver\Pdo;
 
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\TestDox;
 use PHPUnit\Framework\TestCase;
 use Vasoft\Joke\Db\Sql\Driver\Pdo\Connection;
@@ -395,6 +397,102 @@ final class ConnectionTest extends TestCase
             $connection->transaction(static function (Connection $conn): never {
                 throw new \RuntimeException('original error');
             });
+        } finally {
+            $this->replacePdoWithMock($connection, $originalPdo);
+        }
+    }
+
+    #[TestDox('getLastInsertId() возвращает идентификатор')]
+    public function testGetLastInsertId(): void
+    {
+        $this->connection->execute("INSERT INTO users (name) VALUES ('Olga')");
+
+        self::assertSame('1', $this->connection->getLastInsertId());
+        $this->connection->execute("INSERT INTO users (name) VALUES ('Alex')");
+
+        self::assertSame('2', $this->connection->getLastInsertId());
+    }
+
+    #[TestDox('getLastInsertId() возвращает последний идентификатор при множественной вставки')]
+    public function testGetLastInsertIdMultiple(): void
+    {
+        $rows = $this->connection->execute(
+            "INSERT INTO users (name) VALUES ('Olga'),('Alex');",
+        );
+
+        self::assertSame(2, $rows);
+        self::assertSame('2', $this->connection->getLastInsertId());
+    }
+
+    #[TestDox('getLastInsertId() сохраняет оригинальное исключение при ошибке rollBack')]
+    #[AllowMockObjectsWithoutExpectations]
+    public function testGetLastInsertIdPreservesOriginalException(): void
+    {
+        $connection = $this->makeConnection(':memory:');
+        $connection->execute(
+            "INSERT INTO users (name) VALUES ('Olga');",
+        );
+
+        $mockPdo = self::createMock(\PDO::class);
+        $mockPdo->method('lastInsertId')->willThrowException(new \PDOException('Example error'));
+        $originalPdo = $this->replacePdoWithMock($connection, $mockPdo);
+
+        try {
+            $this->expectException(QueryException::class);
+            $this->expectExceptionMessageIs('Example error');
+
+            $connection->getLastInsertId();
+        } finally {
+            $this->replacePdoWithMock($connection, $originalPdo);
+        }
+    }
+
+    #[TestDox('getLastInsertId() бросает исключение при невозможности получить ID')]
+    #[AllowMockObjectsWithoutExpectations]
+    #[DataProvider('provideGetLastInsertExceptionCases')]
+    public function testGetLastInsertException(false|string $value): void
+    {
+        $connection = $this->makeConnection(':memory:');
+
+        $mockPdo = self::createMock(\PDO::class);
+        $mockPdo->method('lastInsertId')->willReturn($value);
+        $originalPdo = $this->replacePdoWithMock($connection, $mockPdo);
+
+        try {
+            $this->expectException(QueryException::class);
+            $this->expectExceptionMessageIs('Unable to retrieve last insert ID...');
+
+            $connection->getLastInsertId();
+        } finally {
+            $this->replacePdoWithMock($connection, $originalPdo);
+        }
+    }
+
+    public static function provideGetLastInsertExceptionCases(): iterable
+    {
+        yield [false];
+        yield [''];
+        yield ['0'];
+    }
+
+    #[TestDox('getLastInsertId() передает имя последовательности в PDO')]
+    public function testGetLastInsertIdWithSequenceName(): void
+    {
+        $connection = $this->makeConnection(':memory:');
+
+        $mockPdo = self::createMock(\PDO::class);
+
+        $mockPdo->expects(self::once())
+            ->method('lastInsertId')
+            ->with('users_id_seq')
+            ->willReturn('42');
+
+        $originalPdo = $this->replacePdoWithMock($connection, $mockPdo);
+
+        try {
+            $id = $connection->getLastInsertId('users_id_seq');
+
+            self::assertSame('42', $id);
         } finally {
             $this->replacePdoWithMock($connection, $originalPdo);
         }

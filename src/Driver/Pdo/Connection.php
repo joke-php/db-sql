@@ -337,4 +337,25 @@ class Connection implements ConnectionInterface
         $this->transactionLevel = 0;
         $this->supportsTransactions = null;
     }
+
+    /**
+     * @throws QueryException Если невозможно определить идентификатор
+     */
+    public function getLastInsertId(?string $sequenceName = null): string
+    {
+        $pdo = $this->ensureConnection();
+
+        try {
+            $id = null === $sequenceName
+                ? $pdo->lastInsertId()
+                : $pdo->lastInsertId($sequenceName);
+            if (false === $id || '' === $id || '0' === $id) {
+                throw new QueryException('Unable to retrieve last insert ID...');
+            }
+
+            return $id;
+        } catch (\PDOException $e) {
+            throw new QueryException($e->getMessage(), 0, $e);
+        }
+    }
 }
