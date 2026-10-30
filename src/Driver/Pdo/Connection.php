@@ -142,7 +142,7 @@ class Connection implements ConnectionInterface
                     $type = is_int($value) ? \PDO::PARAM_INT : \PDO::PARAM_STR;
                     $statement->bindValue($key, $value, $type);
                 }
-                $statement->execute($params);
+                $statement->execute();
             }
 
             return new Result($statement);
@@ -173,7 +173,7 @@ class Connection implements ConnectionInterface
                 $type = is_int($value) ? \PDO::PARAM_INT : \PDO::PARAM_STR;
                 $statement->bindValue($key, $value, $type);
             }
-            $statement->execute($params);
+            $statement->execute();
 
             return $statement->rowCount();
         } catch (\PDOException $e) {
