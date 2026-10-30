@@ -138,6 +138,10 @@ class Connection implements ConnectionInterface
                 $statement = $pdo->query($sql);
             } else {
                 $statement = $pdo->prepare($sql);
+                foreach ($params as $key => $value) {
+                    $type = is_int($value) ? \PDO::PARAM_INT : \PDO::PARAM_STR;
+                    $statement->bindValue($key, $value, $type);
+                }
                 $statement->execute($params);
             }
 
@@ -165,6 +169,10 @@ class Connection implements ConnectionInterface
                 return $result;
             }
             $statement = $pdo->prepare($sql);
+            foreach ($params as $key => $value) {
+                $type = is_int($value) ? \PDO::PARAM_INT : \PDO::PARAM_STR;
+                $statement->bindValue($key, $value, $type);
+            }
             $statement->execute($params);
 
             return $statement->rowCount();
